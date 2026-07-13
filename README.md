@@ -3,6 +3,11 @@
 社内メンバーがエディタ（Zed / VS Code）から API キーで利用する Azure OpenAI エンドポイント。
 用途は **コーディングエージェント**（deployment: `agent-main`）と **ログ解析**（`log-analysis`）の 2 本立て。
 
+**目的**: 業務データ（社内コード・ログ）を社外・国外の LLM SaaS に送らずに済ませ、**データ越境リスクを低減する**こと。
+**国内リージョン（japaneast）に立てた自社管理リソース**に閉じ、SKU は DataZoneStandard でデータ処理範囲をデータゾーン内に限定する。
+※ 保管は日本国内、推論処理は Microsoft 定義のデータゾーン内。厳密な国内単独処理が要件なら SKU 再検討が必要
+（詳細は [docs/design.md §1.1](docs/design.md)）。
+
 - 原本指示書: [foundry-editor-access-instruction.md](foundry-editor-access-instruction.md)
 - 設計書: [docs/design.md](docs/design.md)
 

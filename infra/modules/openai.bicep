@@ -1,5 +1,10 @@
 // Azure OpenAI アカウント + IP allowlist + モデル deployments
+// データ越境リスク低減のため国内リージョン (japaneast) 前提で構築する。
+// deployment は DataZoneStandard SKU（データ処理を Microsoft 定義のデータゾーン内に限定）。
+// 厳密な国内単独処理が要件になった場合は regional Standard SKU を検討（docs/design.md §1.1）。
 param name string
+
+@description('リージョン。データ所在の前提として国内 (japaneast) を既定とする')
 param location string
 param tags object
 param allowedIps array
