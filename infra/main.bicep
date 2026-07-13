@@ -25,9 +25,9 @@ param modelDeployments array = [
   {
     // 既定・主力（コーディング/ログ解析とも）。GPT-5 codex。処理は APAC 圏。
     // ※ 国内完結(regional Standard)チャットは japaneast で対応モデルが Deprecating のため現状不可
-    name: 'gpt5codex-apac'
-    modelName: 'gpt-5.3-codex'
-    modelVersion: '2026-02-24'
+    name: 'gpt5-apac'
+    modelName: 'gpt-5.2'
+    modelVersion: '2025-12-11'
     format: 'OpenAI'
     sku: 'DataZoneStandard'
     capacity: 200

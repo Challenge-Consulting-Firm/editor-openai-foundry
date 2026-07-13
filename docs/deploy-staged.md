@@ -15,14 +15,14 @@
 
 | deployment | モデル | SKU | 処理範囲 |
 |---|---|---|---|
-| `gpt5codex-apac` | gpt-5.3-codex (2026-02-24) | DataZoneStandard | 🌏 APAC |
+| `gpt5-apac` | gpt-5.2 (2025-12-11) | DataZoneStandard | 🌏 APAC |
 
 ```bash
 cp .env.sample .env
 $EDITOR .env                          # IP・webhook・メール・予算を設定（MODEL_DEPLOYMENTS は空のまま）
 ./scripts/deploy.sh --first-run       # 初回のみ --first-run
 cd functions && func azure functionapp publish <functionAppName>
-./scripts/smoke-test.sh <keyVaultName> <endpoint>   # gpt5codex-apac が 200
+./scripts/smoke-test.sh <keyVaultName> <endpoint>   # gpt5-apac が 200
 ```
 
 ## フェーズ2: 非OpenAIモデル（DeepSeek 等）を確認して追加

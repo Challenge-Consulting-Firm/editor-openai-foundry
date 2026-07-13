@@ -15,7 +15,7 @@ az keyvault secret show --vault-name <KV名> --name editor-openai-key --query va
 1. Copilot Chat → モデルピッカー → **Manage Models...**
 2. プロバイダに **Azure** を選択
 3. エンドポイントに `https://<resource>.openai.azure.com/openai/v1/`、API キーを入力
-4. deployment 名をモデルとして追加: `gpt5codex-apac`（既定・主力）。
+4. deployment 名をモデルとして追加: `gpt5-apac`（既定・主力）。
    フェーズ2で `deepseek-apac`（非OpenAI）も同一エンドポイントで追加可。いずれも APAC 処理
 
 以後、チャットのモデルピッカーで用途・機微度に応じて切り替える（`-apac` は越境）。
@@ -28,9 +28,9 @@ az keyvault secret show --vault-name <KV名> --name editor-openai-key --query va
 
 ```yaml
 models:
-  - name: 社内: GPT-5 codex(APAC)
+  - name: 社内: GPT-5.2(APAC)
     provider: azure
-    model: gpt5codex-apac       # deployment 名。既定・主力(gpt-5.3-codex)。APAC 処理
+    model: gpt5-apac       # deployment 名。既定・主力(gpt-5.2)。APAC 処理
     apiBase: https://<resource>.openai.azure.com/openai/v1/
     apiKey: <ここには書かず、環境変数か Continue の secrets 機能を使う>
     systemMessage: |
@@ -43,7 +43,7 @@ models:
   #   apiKey: <同上>
 ```
 
-ログ解析も既定の `gpt5codex-apac`（gpt-5.3-codex）を使う。`systemMessage` に
+ログ解析も既定の `gpt5-apac`（gpt-5.2）を使う。`systemMessage` に
 [prompts/log-analysis.md](../prompts/log-analysis.md) を貼ったエントリを別途用意する。
 
 **キーの平文を設定ファイルに書かない**（利用規約違反）。Continue の secrets / 環境変数参照を使う。
