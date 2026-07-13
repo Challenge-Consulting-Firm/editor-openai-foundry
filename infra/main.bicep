@@ -5,7 +5,7 @@ targetScope = 'subscription'
 @description('リソースグループ名。既存 OPSNOTE 用リソースとは別 RG に分離する')
 param resourceGroupName string = 'rg-editor-openai'
 
-@description('リージョン。DataZoneStandard SKU 前提で japaneast')
+@description('リージョン。regional Standard SKU で国内単独処理とするため japaneast 前提')
 param location string = 'japaneast'
 
 @description('リソース名の基礎文字列')
@@ -20,18 +20,18 @@ param tags object = {
 @description('IP allowlist。台帳（申請者・追加日）は main.bicepparam のコメントに必ず残す')
 param allowedIps array
 
-@description('モデル deployment 定義。name / modelName / modelVersion(空なら既定) / capacity(TPM 千単位)')
+@description('モデル deployment 定義。name / modelName / modelVersion(空なら既定) / capacity(TPM 千単位) / sku(省略時 Standard)。regional Standard の japaneast 提供モデルに限る（GPT-5 系は非対応）')
 param modelDeployments array = [
   {
     name: 'agent-main'
-    modelName: 'gpt-5.4'
-    modelVersion: ''
+    modelName: 'gpt-4.1-mini'
+    modelVersion: '2025-04-14'
     capacity: 50
   }
   {
     name: 'log-analysis'
-    modelName: 'gpt-5.4-mini'
-    modelVersion: ''
+    modelName: 'gpt-4.1-mini'
+    modelVersion: '2025-04-14'
     capacity: 50
   }
 ]

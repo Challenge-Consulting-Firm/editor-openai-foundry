@@ -17,18 +17,25 @@ param allowedIps = [
 ]
 
 // ---- モデル deployment ---------------------------------------------------
+// SKU は regional Standard（推論を japaneast 単独で処理 = 国内完結）。
+// !!! 重要 !!! japaneast の regional Standard で提供されるチャットモデルは限定的で、
+//   GPT-5 系は非対応。2026-07 時点の選択肢は gpt-4.1-mini / gpt-4o のみ。
+//   最新の提供状況は必ず下記で確認すること:
+//   az cognitiveservices account list-models -n <account> -g <rg> \
+//     --query "[?contains(skus[].name,'Standard') && kind=='OpenAI'].{model:name,version:version}" -o table
+//   （公式: models-sold-directly-by-azure-region-availability の Standard/Regional > Asia Pacific）
 // capacity は TPM 千単位（50 = 50K TPM）。コストの実効上限を兼ねるため控えめに開始（指示書 §5 補助ガード）
 param modelDeployments = [
   {
-    name: 'agent-main' // コーディングエージェント用
-    modelName: 'gpt-5.4'
-    modelVersion: '' // 空 = リージョン既定バージョン
+    name: 'agent-main' // コーディングエージェント用（japaneast regional Standard の最上位相当）
+    modelName: 'gpt-4.1-mini'
+    modelVersion: '2025-04-14'
     capacity: 50
   }
   {
     name: 'log-analysis' // ログ解析用
-    modelName: 'gpt-5.4-mini'
-    modelVersion: ''
+    modelName: 'gpt-4.1-mini'
+    modelVersion: '2025-04-14'
     capacity: 50
   }
 ]

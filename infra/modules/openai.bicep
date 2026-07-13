@@ -1,7 +1,9 @@
 // Azure OpenAI アカウント + IP allowlist + モデル deployments
 // データ越境リスク低減のため国内リージョン (japaneast) 前提で構築する。
-// deployment は DataZoneStandard SKU（データ処理を Microsoft 定義のデータゾーン内に限定）。
-// 厳密な国内単独処理が要件になった場合は regional Standard SKU を検討（docs/design.md §1.1）。
+// deployment は regional Standard SKU を採用し、推論処理を japaneast 単独に閉じる
+// （保管・処理とも日本国内で完結。最も厳格なデータ所在。docs/design.md §1.1）。
+// 制約: japaneast の regional Standard で提供されるチャットモデルは限られる
+// （GPT-5 系は非対応）。モデルは main.bicepparam で提供状況を確認のうえ指定すること。
 param name string
 
 @description('リージョン。データ所在の前提として国内 (japaneast) を既定とする')
@@ -42,7 +44,9 @@ resource deployments 'Microsoft.CognitiveServices/accounts/deployments@2024-10-0
     parent: account
     name: d.name
     sku: {
-      name: 'DataZoneStandard'
+      // regional Standard（推論を japaneast 単独で処理）。
+      // 個別に上書きしたい場合のみ main.bicepparam の各 deployment に sku を指定
+      name: d.?sku ?? 'Standard'
       capacity: d.capacity
     }
     properties: {
