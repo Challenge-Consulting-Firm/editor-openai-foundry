@@ -46,11 +46,15 @@ class AzureOps:
         return (secret.properties.tags or {}).get("slot")
 
     def regenerate_key(self, key_name: str) -> str:
-        """指定スロットのキーを再生成し、新しいキー値を返す。"""
+        """指定スロットのキーを再生成し、新しいキー値を返す。
+
+        Azure API の keyName はプレーン文字列 'Key1' / 'Key2'（先頭大文字）を要求する。
+        slot タグは小文字 key1/key2 のため、送信時のみ capitalize する。
+        """
         keys = self._mgmt.accounts.regenerate_key(
             self._resource_group,
             self._account_name,
-            {"key_name": key_name},
+            key_name.capitalize(),  # 'key2' -> 'Key2'
         )
         return keys.key1 if key_name == "key1" else keys.key2
 
