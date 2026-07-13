@@ -19,7 +19,7 @@ deployment として混在配備**する。利用者は違い（後述の reside
 
 | deployment 名 | モデル | SKU / 処理範囲 | 主用途 | フェーズ |
 |---|---|---|---|---|
-| `gpt5-apac` | gpt-5.2 (OpenAI) | DataZone / 🌏 APAC（越境） | **既定・主力**。コーディング / ログ解析とも | 1（✅デプロイ済） |
+| `gpt5-apac` | gpt-5.2 (OpenAI) | DataZone / 🌏 APAC（越境） | **既定・主力**。コーディング / ログ解析とも | 1 |
 | `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | DataZone / 🌏 APAC（越境） | 代替の高性能コーディング | 2（確認後追加） |
 
 > gpt-5.2 採用理由: **codex 系（gpt-5.3-codex）は Chat Completions 非対応（Responses API 専用）**で Zed/VS Code から使えないため（§1.1）。
@@ -34,7 +34,7 @@ deployment として混在配備**する。利用者は違い（後述の reside
 - deployment を分けることで、共通キーのままでも KQL レポートで**モデル別（= 用途別・residency 別）の利用量・コスト**を追跡できる
 
 - 認証: **api-key のみ**（エディタに Entra ID トークンの自動更新機構が無いため）
-- 既存 OPSNOTE 用リソース（prod / eval）とは**別リソースグループに完全分離**
+- 既存の他用途リソースとは**別リソースグループに完全分離**
 - key 認証の弱点は 3 点で補償: ①週次キーローテーション（R1）、②IP allowlist（R2）、③コスト上限（R3）
 
 ### 1.1 データ所在・越境リスクの方針（前提）

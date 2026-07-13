@@ -2,7 +2,7 @@
 // デプロイ: scripts/deploy.sh 参照（az deployment sub create）
 targetScope = 'subscription'
 
-@description('リソースグループ名。既存 OPSNOTE 用リソースとは別 RG に分離する')
+@description('リソースグループ名。既存の他用途リソースとは別 RG に分離する')
 param resourceGroupName string = 'rg-editor-openai'
 
 @description('リージョン。データ所在の前提として国内 (japaneast)。regional Standard の deployment はここで単独処理される')

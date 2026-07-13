@@ -1,7 +1,7 @@
 # 指示書: エディタ用 Azure OpenAI (Foundry) リソース払い出し
 
 対象: Zed / VS Code 等のコードエディタから API キーで利用する専用 Azure OpenAI リソースの新規構築。
-既存の OPSNOTE 用リソース（prod / eval）とは完全分離し、相乗りしない。
+既存の他用途 Azure OpenAI リソースとは完全分離し、相乗りしない。
 
 ## 1. 目的・スコープ
 
