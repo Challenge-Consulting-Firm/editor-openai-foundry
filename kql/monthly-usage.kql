@@ -7,7 +7,7 @@
 
 // ---------------------------------------------------------------------------
 // 1. deployment 別・日別のリクエスト数と平均レイテンシ（用途別の利用傾向）
-//    agent-main = コーディングエージェント / log-analysis = ログ解析
+//    deployment 名 = モデル/residency（例 gpt41mini-jp=国内, gpt5codex-apac/deepseek-apac=APAC）
 AzureDiagnostics
 | where ResourceProvider == "MICROSOFT.COGNITIVESERVICES"
 | where Category == "RequestResponse"

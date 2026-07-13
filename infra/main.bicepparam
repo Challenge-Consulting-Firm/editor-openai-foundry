@@ -16,27 +16,46 @@ param allowedIps = [
   { value: '203.0.113.20/32' } // TODO: VPN egress IP に置き換え
 ]
 
-// ---- モデル deployment ---------------------------------------------------
-// SKU は regional Standard（推論を japaneast 単独で処理 = 国内完結）。
-// !!! 重要 !!! japaneast の regional Standard で提供されるチャットモデルは限定的で、
-//   GPT-5 系は非対応。2026-07 時点の選択肢は gpt-4.1-mini / gpt-4o のみ。
-//   最新の提供状況は必ず下記で確認すること:
+// ---- モデル deployment（複数モデル/複数 residency を混在）-----------------------
+// リソースは kind: AIServices（Foundry）。OpenAI/非OpenAI 両方を同一アカウントに配備し、
+// 利用者はエディタの deployment 名で切り替える。data 所在は sku で決まる:
+//   sku: 'Standard'         → 推論も japaneast 単独（国内完結）
+//   sku: 'DataZoneStandard' → 推論は APAC 圏（日本国外もあり得る = 越境）
+// deployment 名に residency（-jp / -apac）を含め、利用者が越境を認識できるようにする。
+//
+// format は publisher: OpenAI 系='OpenAI'、DeepSeek='DeepSeek'、Grok='xAI'、Mistral='Mistral AI'、Phi='Microsoft'。
+//
+// !!! デプロイ前に必ず提供状況とモデル名/バージョン/format を確認すること:
 //   az cognitiveservices account list-models -n <account> -g <rg> \
-//     --query "[?contains(skus[].name,'Standard') && kind=='OpenAI'].{model:name,version:version}" -o table
-//   （公式: models-sold-directly-by-azure-region-availability の Standard/Regional > Asia Pacific）
-// capacity は TPM 千単位（50 = 50K TPM）。コストの実効上限を兼ねるため控えめに開始（指示書 §5 補助ガード）
+//     --query "[].{model:name, version:version, format:format, skus:skus[].name}" -o table
+//   （公式: models-sold-directly-by-azure-region-availability）
+//
+// capacity は TPM 千単位。コストの実効上限を兼ねる（指示書 §5 補助ガード）。
+// 高単価モデル（DataZone の GPT-5/DeepSeek 等）は TPM を小さくして worst-case を封じ込める。
 param modelDeployments = [
   {
-    name: 'agent-main' // コーディングエージェント用（japaneast regional Standard の最上位相当）
+    name: 'gpt41mini-jp' // 既定・国内完結。軽量コーディング/ログ解析
     modelName: 'gpt-4.1-mini'
     modelVersion: '2025-04-14'
+    format: 'OpenAI'
+    sku: 'Standard' // 国内単独処理
     capacity: 50
   }
   {
-    name: 'log-analysis' // ログ解析用
-    modelName: 'gpt-4.1-mini'
-    modelVersion: '2025-04-14'
-    capacity: 50
+    name: 'gpt5codex-apac' // 高性能コーディング（OpenAI GPT-5 codex）。APAC 処理（越境）
+    modelName: 'gpt-5.3-codex'
+    modelVersion: '2026-02-24'
+    format: 'OpenAI'
+    sku: 'DataZoneStandard'
+    capacity: 20 // 高単価のため絞る
+  }
+  {
+    name: 'deepseek-apac' // 代替の高性能コーディング（非 OpenAI）。APAC 処理（越境）
+    modelName: 'DeepSeek-V4-Pro'
+    modelVersion: '' // 空 = 既定バージョン（list-models で確認して固定を推奨）
+    format: 'DeepSeek'
+    sku: 'DataZoneStandard'
+    capacity: 20
   }
 ]
 

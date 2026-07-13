@@ -1,6 +1,7 @@
 # コーディングエージェント用システムプロンプト
 
-エディタのエージェントプロファイル（deployment: `agent-main`）に設定するシステムプロンプト。
+エディタのコーディング用プロファイルに設定するシステムプロンプト。
+モデルは機微度・性能要件で選ぶ（`gpt41mini-jp`=国内完結 / `gpt5codex-apac` / `deepseek-apac`=APAC 越境）。
 Zed: Agent Panel の設定 → プロファイル → System Prompt / `.rules` ファイル。
 VS Code (Continue): config の `systemMessage`。
 

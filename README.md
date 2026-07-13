@@ -1,12 +1,20 @@
 # エディタ用 Azure OpenAI (Foundry) 基盤
 
-社内メンバーがエディタ（Zed / VS Code）から API キーで利用する Azure OpenAI エンドポイント。
-用途は **コーディングエージェント**（deployment: `agent-main`）と **ログ解析**（`log-analysis`）の 2 本立て。
+社内メンバーがエディタ（Zed / VS Code）から API キーで利用する Azure AI Foundry エンドポイント。
+用途は **コーディングエージェント** と **ログ解析**。利用者は複数モデルを **deployment 名で切り替えて**使う。
 
 **目的**: 業務データ（社内コード・ログ）を社外・国外の LLM SaaS に送らずに済ませ、**データ越境リスクを低減する**こと。
-**国内リージョン（japaneast）に立てた自社管理リソース**に閉じ、SKU は **regional Standard**（保管・推論とも japaneast 単独で完結）を採用する。
-※ トレードオフ: japaneast の regional Standard では **GPT-5 系が非対応**。既定モデルは `gpt-4.1-mini`
-（GPT-5 が必要なら越境を許容して DataZone/Global SKU を選ぶ。詳細は [docs/design.md §1.1](docs/design.md)）。
+**国内リージョン（japaneast）に立てた自社管理リソース（`kind: AIServices`）**に閉じ、OpenAI / 非 OpenAI（DeepSeek 等）の
+**複数モデルを混在配備**する。データ処理範囲は deployment ごとの SKU で決まる（保管は全モデル日本国内固定）:
+
+| deployment（既定） | モデル | 処理範囲 | 用途 |
+|---|---|---|---|
+| `gpt41mini-jp` | gpt-4.1-mini (OpenAI) | 🇯🇵 国内完結 | 既定・軽量コーディング/ログ解析 |
+| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | 🌏 APAC（越境） | 高性能コーディング |
+| `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | 🌏 APAC（越境） | 代替の高性能コーディング |
+
+利用者は違い（越境・コスト）を認識のうえ選択する前提。deployment 名の `-jp`/`-apac` で処理範囲が分かる。
+全モデルは共通の `openai/v1` エンドポイント + 共通キーで使え、エディタ設定は 1 プロバイダで済む。
 
 - 原本指示書: [foundry-editor-access-instruction.md](foundry-editor-access-instruction.md)
 - 設計書: [docs/design.md](docs/design.md)
@@ -17,9 +25,9 @@
 
 | SKU（環境） | 保管 (at rest) | 推論処理 | 越境リスク | 本基盤での位置づけ |
 |---|---|---|---|---|
-| **regional Standard** | 日本国内 | **japaneast 単独** | 最小（国内完結） | ✅ **採用中** |
-| DataZone Standard | 日本国内 | アジア太平洋圏内 | 中（国外処理あり得る） | GPT-5 が必要なら選択肢 |
-| Global Standard | 日本国内 | 全世界 | 大 | 非推奨 |
+| **regional Standard** | 日本国内 | **japaneast 単独** | 最小（国内完結） | ✅ 採用（`*-jp` 既定） |
+| DataZone Standard | 日本国内 | アジア太平洋圏内 | 中（**米国は含まない**） | ✅ 採用（`*-apac` 高性能/DeepSeek） |
+| Global Standard | 日本国内 | 全世界 | 大（**米国を含む**） | 非採用 |
 
 ### 「保管」と「処理」の違い（なぜ環境で越境リスクが変わるか）
 
@@ -99,12 +107,12 @@ OpenAI 以外にも Azure から直接提供されるモデル（DeepSeek・xAI 
   - ログ解析 → `mistral-medium-3-5`、`DeepSeek-V4-Flash`、`gpt-5.4-mini`(OpenAI) がコスト効率良
 - **コーディング特化の Kimi-K2.7-Code や最小・低コストの Phi-4 は Global のみ**（越境大）
 
-### ⚠️ 重要: 非 OpenAI モデルはリソース種別が異なる
+### リソース種別（本基盤は対応済み）
 
-これらは「Foundry Models sold by Azure」で、**Azure AI Foundry リソース（`kind: AIServices`）**が必要。
-本基盤の現構成は `kind: OpenAI`（OpenAI モデル専用）のため、**そのままでは非 OpenAI モデルを使えない**。
-採用する場合は AIServices リソースを別途立てる（or 差し替える）改修が必要になる。residency の SKU 概念
-（regional / DataZone / Global）は同じで、endpoint も OpenAI 互換なのでエディタ側設定は流用できる。
+非 OpenAI モデルは「Foundry Models sold by Azure」で、**Azure AI Foundry リソース（`kind: AIServices`）**が必要。
+**本基盤は `kind: AIServices` を採用済み**のため、OpenAI モデルと非 OpenAI モデル（DeepSeek 等）を同一リソースに
+混在配備できる。全モデルは共通の `openai/v1` エンドポイント + 共通 api-key で使え、エディタ側は 1 プロバイダで済む
+（deployment 名で切替）。residency の SKU 概念（regional / DataZone / Global）は全モデル共通。
 
 > 上表は提供可否（事実）に基づく。モデルの能力評価はベンダーの位置づけに基づく参考であり、
 > 実採用時は対象タスクでの実測（同一プロンプトで A/B 比較）を推奨する。提供状況は

@@ -5,7 +5,7 @@ targetScope = 'subscription'
 @description('リソースグループ名。既存 OPSNOTE 用リソースとは別 RG に分離する')
 param resourceGroupName string = 'rg-editor-openai'
 
-@description('リージョン。regional Standard SKU で国内単独処理とするため japaneast 前提')
+@description('リージョン。データ所在の前提として国内 (japaneast)。regional Standard の deployment はここで単独処理される')
 param location string = 'japaneast'
 
 @description('リソース名の基礎文字列')
@@ -20,19 +20,34 @@ param tags object = {
 @description('IP allowlist。台帳（申請者・追加日）は main.bicepparam のコメントに必ず残す')
 param allowedIps array
 
-@description('モデル deployment 定義。name / modelName / modelVersion(空なら既定) / capacity(TPM 千単位) / sku(省略時 Standard)。regional Standard の japaneast 提供モデルに限る（GPT-5 系は非対応）')
+@description('モデル deployment 定義。要素: name / modelName / modelVersion / capacity(TPM千単位) / format(publisher, 省略時 OpenAI) / sku(省略時 Standard=regional/国内完結, DataZoneStandard=APAC)。deployment 名に residency を含めること')
 param modelDeployments array = [
   {
-    name: 'agent-main'
+    // 既定・国内完結。軽量コーディング/ログ解析。data は japaneast から出ない
+    name: 'gpt41mini-jp'
     modelName: 'gpt-4.1-mini'
     modelVersion: '2025-04-14'
+    format: 'OpenAI'
+    sku: 'Standard'
     capacity: 50
   }
   {
-    name: 'log-analysis'
-    modelName: 'gpt-4.1-mini'
-    modelVersion: '2025-04-14'
-    capacity: 50
+    // 高性能コーディング（OpenAI GPT-5 codex）。処理は APAC 圏（越境）。TPM を絞りコスト封じ込め
+    name: 'gpt5codex-apac'
+    modelName: 'gpt-5.3-codex'
+    modelVersion: '2026-02-24'
+    format: 'OpenAI'
+    sku: 'DataZoneStandard'
+    capacity: 20
+  }
+  {
+    // 代替の高性能コーディング（非 OpenAI）。処理は APAC 圏（越境）
+    name: 'deepseek-apac'
+    modelName: 'DeepSeek-V4-Pro'
+    modelVersion: ''
+    format: 'DeepSeek'
+    sku: 'DataZoneStandard'
+    capacity: 20
   }
 ]
 
@@ -143,7 +158,7 @@ module budget 'modules/budget.bicep' = {
 }
 
 output endpoint string = openai.outputs.endpoint
-output openAiV1BaseUrl string = '${openai.outputs.endpoint}openai/v1/'
+output openAiV1BaseUrl string = openai.outputs.openAiV1BaseUrl
 output keyVaultName string = keyvault.outputs.keyVaultName
 output functionAppName string = functions.outputs.functionAppName
 output resourceGroupName string = rg.name
