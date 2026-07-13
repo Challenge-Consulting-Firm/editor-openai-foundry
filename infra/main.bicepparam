@@ -51,12 +51,12 @@ var defaultModelDeployments = [
   {
     name: 'gpt5-apac' // 既定・主力（コーディング/ログ解析とも）。汎用 GPT-5.2。APAC 処理
     // gpt-5.3-codex は Chat Completions 非対応（Responses API 専用）で Zed/VS Code から使えないため不採用。
-    // gpt-5.2 は chatCompletion=true で GA。gpt-5.4-mini は quota 枯渇のため不採用。
+    // gpt-5.2 は chatCompletion=true で GA。
     modelName: 'gpt-5.2'
     modelVersion: '2025-12-11'
     format: 'OpenAI'
     sku: 'DataZoneStandard'
-    capacity: 200 // 200K TPM。gpt-5.2 の DataZone quota 空き ~250 に収まる
+    capacity: 200 // 200K TPM。サブスクリプションの quota 空きに収まる値にする（README のデプロイ前チェックリスト参照）
   }
 ]
 
