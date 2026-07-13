@@ -11,6 +11,45 @@
 - 原本指示書: [foundry-editor-access-instruction.md](foundry-editor-access-instruction.md)
 - 設計書: [docs/design.md](docs/design.md)
 
+## SKU（環境）とデータ処理範囲
+
+「どこでデータが処理されるか」が SKU で決まる。越境リスクと使えるモデルはトレードオフの関係にある。
+
+| SKU（環境） | 保管 (at rest) | 推論処理 | 越境リスク | 本基盤での位置づけ |
+|---|---|---|---|---|
+| **regional Standard** | 日本国内 | **japaneast 単独** | 最小（国内完結） | ✅ **採用中** |
+| DataZone Standard | 日本国内 | アジア太平洋圏内 | 中（国外処理あり得る） | GPT-5 が必要なら選択肢 |
+| Global Standard | 日本国内 | 全世界 | 大 | 非推奨 |
+
+## 使えるモデル × 環境マトリクス（japaneast / 2026-07 時点）
+
+チャット／コーディング用途で関係するモデルのみ抜粋。◯=提供あり、−=提供なし。
+**最新の提供状況は必ず下記コマンドで確認すること**（新モデルが追加され得る）。
+
+| モデル | regional Standard（国内完結） | DataZone Standard（APAC） | Global Standard（全世界） |
+|---|:---:|:---:|:---:|
+| gpt-4o (2024-11-20) | ◯ | − | ◯ |
+| **gpt-4.1-mini** (2025-04-14) | **◯ ← 既定** | − | ◯ |
+| gpt-4.1 (2025-04-14) | − | − | ◯ |
+| gpt-5.2 | − | ◯ | ◯ |
+| gpt-5.3-codex | − | ◯ | ◯ |
+| gpt-5.4-mini | − | ◯ | ◯ |
+| gpt-5.4 / gpt-5.5 / gpt-5.6-* | − | − | ◯ |
+
+要点:
+- **国内完結（regional Standard）で使えるチャットモデルは実質 `gpt-4o` と `gpt-4.1-mini` のみ**。GPT-5 系は不可
+- **GPT-5 系が必要な場合の最小越境は DataZone Standard**（`gpt-5.4-mini` / `gpt-5.3-codex` 等、処理はアジア太平洋圏内）
+- 最新版・最上位モデル（gpt-5.6 等）は Global Standard のみ
+
+```bash
+# japaneast で実際に使えるモデルと対応 SKU を確認
+az cognitiveservices account list-models -n <account> -g <rg> \
+  --query "[?kind=='OpenAI'].{model:name, version:version, skus:skus[].name}" -o table
+```
+
+SKU / モデルの変更点は [infra/main.bicepparam](infra/main.bicepparam) の `modelDeployments` のみ
+（各要素に任意の `sku` を指定可。省略時は regional Standard）。背景は [docs/design.md §1.1](docs/design.md)。
+
 ## 構成
 
 | パス | 内容 |
