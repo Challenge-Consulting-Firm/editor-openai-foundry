@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Azure Functions local
+functions/local.settings.json
+
+# Bicep build artifacts
+*.json.tmp
+
+# OS
+.DS_Store

@@ -1,0 +1,49 @@
+// 月次利用量レポート（指示書 §6）
+// 対象: Log Analytics ワークスペース log-editor-openai
+// 実行方法: Portal > Log Analytics > ログ で各クエリを個別に実行（先頭コメントで区切り）
+//
+// 注意: api-key 呼び出しは caller identity が残らない。
+// 追跡できるのは 呼び出し元 IP・deployment・トークン量 まで（利用規約に明記済み）。
+
+// ---------------------------------------------------------------------------
+// 1. deployment 別・日別のリクエスト数と平均レイテンシ（用途別の利用傾向）
+//    agent-main = コーディングエージェント / log-analysis = ログ解析
+AzureDiagnostics
+| where ResourceProvider == "MICROSOFT.COGNITIVESERVICES"
+| where Category == "RequestResponse"
+| where TimeGenerated >= startofmonth(now()) // 先月分は startofmonth(now(), -1) .. endofmonth(now(), -1)
+| extend deployment = tostring(parse_json(properties_s).modelDeploymentName)
+| where isnotempty(deployment)
+| summarize requests = count(), avgDurationMs = avg(DurationMs)
+    by deployment, day = bin(TimeGenerated, 1d)
+| order by day asc, deployment asc
+
+// ---------------------------------------------------------------------------
+// 2. 呼び出し元 IP 別のリクエスト数（allowlist 台帳との突合・不審 IP の確認）
+AzureDiagnostics
+| where ResourceProvider == "MICROSOFT.COGNITIVESERVICES"
+| where Category == "RequestResponse"
+| where TimeGenerated >= startofmonth(now())
+| summarize requests = count(), lastSeen = max(TimeGenerated) by CallerIPAddress
+| order by requests desc
+
+// ---------------------------------------------------------------------------
+// 3. deployment 別トークン量（メトリクス。診断設定 AllMetrics が前提）
+//    プロンプト側 = ProcessedPromptTokens / 生成側 = GeneratedTokens
+AzureMetrics
+| where ResourceProvider == "MICROSOFT.COGNITIVESERVICES"
+| where MetricName in ("ProcessedPromptTokens", "GeneratedTokens", "TokenTransaction")
+| where TimeGenerated >= startofmonth(now())
+| summarize tokens = sum(Total) by MetricName, day = bin(TimeGenerated, 1d)
+| order by day asc, MetricName asc
+
+// ---------------------------------------------------------------------------
+// 4. 失敗リクエストの内訳（401 = キー失効の兆候 / 403 = allowlist 外アクセス）
+AzureDiagnostics
+| where ResourceProvider == "MICROSOFT.COGNITIVESERVICES"
+| where Category == "RequestResponse"
+| where TimeGenerated >= startofmonth(now())
+| extend status = toint(ResultSignature)
+| where status >= 400
+| summarize count() by status, CallerIPAddress, day = bin(TimeGenerated, 1d)
+| order by day asc, count_ desc
