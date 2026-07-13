@@ -122,7 +122,8 @@ OpenAI 以外にも Azure から直接提供されるモデル（DeepSeek・xAI 
 
 | パス | 内容 |
 |---|---|
-| `infra/` | bicep 一式。`main.bicepparam` が環境ごとの編集ポイント（IP 台帳・モデル・予算） |
+| `.env.sample` | デプロイ環境変数のサンプル。`cp .env.sample .env` して実値を設定（`.env` は非コミット） |
+| `infra/` | bicep 一式。`.env` から値を読む。直接編集はモデル catalog（`main.bicepparam` の `modelDeployments`）のみ |
 | `functions/` | 運用 Functions（週次キーローテーション / ハードリミット停止 / ソフト通知） |
 | `kql/` | 月次利用量レポートのクエリ |
 | `prompts/` | 用途別システムプロンプト（エディタのプロファイルに設定） |
@@ -132,20 +133,24 @@ OpenAI 以外にも Azure から直接提供されるモデル（DeepSeek・xAI 
 ## デプロイ手順
 
 ```bash
-# 0. 前提: az login / az account set 済み、Power Automate の webhook フロー作成済み
-# 1. infra/main.bicepparam の TODO（IP 台帳・運用者メール・予算・開始日）を実値に置換
+# 0. 前提: az login 済み、Power Automate の webhook フロー作成済み
 
-# 2. デプロイ（what-if 確認 → yes で適用）
-export TEAMS_WEBHOOK_URL='https://...'
+# 1. .env を用意して実値を設定（IP allowlist・Teams webhook・運用者メール・予算 等）
+cp .env.sample .env
+$EDITOR .env
+
+# 2. （任意）配備モデルを変えるなら infra/main.bicepparam の modelDeployments を編集
+
+# 3. デプロイ（.env を読み込み → what-if 確認 → yes で適用）
 ./scripts/deploy.sh --first-run     # 初回のみ --first-run（key1 を Key Vault へ初期投入）
 
-# 3. Functions のコードデプロイ
+# 4. Functions のコードデプロイ
 cd functions && func azure functionapp publish <functionAppName>   # deploy.sh の出力参照
 
-# 4. 疎通確認
+# 5. 疎通確認
 ./scripts/smoke-test.sh <keyVaultName> <endpoint>
 
-# 5. 受け入れ基準の実測（docs/design.md §8 の 7 項目）
+# 6. 受け入れ基準の実測（docs/design.md §8 の 7 項目）
 ```
 
 2 回目以降のデプロイは `--first-run` を**付けない**（ローテーション済みキーを上書きするため）。

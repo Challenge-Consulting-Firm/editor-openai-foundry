@@ -1,20 +1,31 @@
-// 環境パラメータ。デプロイ前にプレースホルダを実値に置き換えること。
-// IP の追加・削除は必ずこのファイル経由で行い、台帳コメントを残す（指示書 §4）
+// 環境パラメータ。
+// 環境ごとに変わる値・秘密は .env（.env.sample をコピー）で管理し、deploy.sh が読み込む。
+// このファイルは env を読むだけで、直接編集が要るのはモデル catalog（modelDeployments）のみ。
 using 'main.bicep'
 
-param resourceGroupName = 'rg-editor-openai'
-param location = 'japaneast'
-param baseName = 'editor-aoai'
+// ---- .env 由来（環境依存・秘密）-----------------------------------------------
+param resourceGroupName = readEnvironmentVariable('RESOURCE_GROUP', 'rg-editor-openai')
+param location = readEnvironmentVariable('LOCATION', 'japaneast')
+param baseName = readEnvironmentVariable('BASE_NAME', 'editor-aoai')
 
-// ---- IP allowlist 台帳 --------------------------------------------------
-// 形式: { value: '<グローバルIP>/32' }
-// 変更時は「申請者 / 追加日 / 用途」をコメントで残すこと
-param allowedIps = [
-  // 例: 情シス申請 2026-07-01 オフィス回線
-  { value: '203.0.113.10/32' } // TODO: オフィス回線のグローバル IP に置き換え
-  // 例: 情シス申請 2026-07-01 会社 VPN egress
-  { value: '203.0.113.20/32' } // TODO: VPN egress IP に置き換え
-]
+// ALLOWED_IPS: カンマ区切りのグローバル IP。/32 なしは自動付与。空要素は除外
+param allowedIps = map(
+  filter(split(readEnvironmentVariable('ALLOWED_IPS', ''), ','), s => !empty(trim(s))),
+  s => { value: contains(trim(s), '/') ? trim(s) : '${trim(s)}/32' }
+)
+
+param teamsWebhookUrl = readEnvironmentVariable('TEAMS_WEBHOOK_URL', '')
+
+// OPS_EMAILS: カンマ区切り
+param opsEmails = map(
+  filter(split(readEnvironmentVariable('OPS_EMAILS', ''), ','), s => !empty(trim(s))),
+  s => trim(s)
+)
+
+param monthlyBudgetAmount = int(readEnvironmentVariable('MONTHLY_BUDGET_AMOUNT', '100000'))
+param budgetStartDate = readEnvironmentVariable('BUDGET_START_DATE', '2026-07-01')
+param usersGroupObjectId = readEnvironmentVariable('USERS_GROUP_OBJECT_ID', '')
+param seedInitialKey = bool(readEnvironmentVariable('SEED_INITIAL_KEY', 'false'))
 
 // ---- モデル deployment（複数モデル/複数 residency を混在）-----------------------
 // リソースは kind: AIServices（Foundry）。OpenAI/非OpenAI 両方を同一アカウントに配備し、
@@ -58,24 +69,3 @@ param modelDeployments = [
     capacity: 20
   }
 ]
-
-// ---- 通知・コスト -----------------------------------------------------------
-// Teams Workflows (Power Automate「Webhook 要求を受信したとき」) の URL。
-// 平文コミットを避けたい場合は deploy.sh が環境変数 TEAMS_WEBHOOK_URL から上書き指定する
-param teamsWebhookUrl = readEnvironmentVariable('TEAMS_WEBHOOK_URL', '')
-
-param opsEmails = [
-  'ops@example.com' // TODO: 運用者メールに置き換え
-]
-
-// 月次予算（円）。初期値の目安: 想定利用の 2〜3 倍
-param monthlyBudgetAmount = 100000
-
-// 当月 1 日（YYYY-MM-01）
-param budgetStartDate = '2026-07-01'
-
-// 利用者 Entra グループ objectId（Key Vault Secrets User 付与）。未定なら空のまま
-param usersGroupObjectId = ''
-
-// 初回デプロイ時のみ true（key1 を Key Vault へ初期投入）。運用開始後は必ず false
-param seedInitialKey = false
