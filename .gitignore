@@ -5,8 +5,10 @@ __pycache__/
 venv/
 .pytest_cache/
 
-# デプロイ環境変数・秘密（.env.sample はコミット、.env はしない）
+# デプロイ環境変数・秘密（.env.sample はコミット、.env と派生はしない）
 .env
+.env.bak*
+.env.local
 
 # Azure Functions local
 functions/local.settings.json

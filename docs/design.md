@@ -19,14 +19,16 @@ deployment として混在配備**する。利用者は違い（後述の reside
 
 | deployment 名 | モデル | SKU / 処理範囲 | 主用途 | フェーズ |
 |---|---|---|---|---|
-| `gpt41mini-jp` | gpt-4.1-mini (OpenAI) | Standard / 🇯🇵 **国内完結** | 既定。軽量コーディング / ログ解析 | 1 |
+| `gpt5-apac` | gpt-5.2 (OpenAI) | DataZone / 🌏 APAC（越境） | 既定。汎用 / ログ解析 / 軽量コーディング | 1 |
 | `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | DataZone / 🌏 APAC（越境） | 高性能コーディング | 1 |
 | `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | DataZone / 🌏 APAC（越境） | 代替の高性能コーディング | 2（確認後追加） |
 
+> ⚠️ **国内完結（regional Standard）チャットは現状 japaneast で配備不可**（対応モデルが Deprecating）。§1.1 と
+> [README「実測で分かった制約」](../README.md)を参照。当面は全 deployment が DataZone（APAC 処理）になる。
 > 段階デプロイ: 非OpenAIモデルは AIServices 作成後に `list-models` で確認してから足す（[deploy-staged.md](deploy-staged.md)）。
 
 - **用途（コーディング / ログ解析）** はエディタ側プロファイル + システムプロンプト（[prompts/](../prompts/)）で切替
-- **モデル / residency** は deployment 名で切替。名前に `-jp`（国内完結）/ `-apac`（越境）を含め、利用者が処理範囲を認識できるようにする
+- **モデル / residency** は deployment 名で切替。名前に `-apac`（越境）を含め、利用者が処理範囲を認識できるようにする（国内完結が可能になれば `-jp` を追加）
 - deployment を分けることで、共通キーのままでも KQL レポートで**モデル別（= 用途別・residency 別）の利用量・コスト**を追跡できる
 
 - 認証: **api-key のみ**（エディタに Entra ID トークンの自動更新機構が無いため）
@@ -36,20 +38,24 @@ deployment として混在配備**する。利用者は違い（後述の reside
 ### 1.1 データ所在・越境リスクの方針（前提）
 
 本基盤は **国内リージョン japaneast に構築する前提**とする。**保管（data at rest）は全 deployment 共通で日本国内**に固定され、
-**推論処理の範囲は deployment ごとの SKU で決まる**。利用者が越境を認識のうえ複数モデルから選べる方針とし、
-「国内完結を既定に、必要に応じて越境モデルを明示的に選ぶ」構成にする。
+**推論処理の範囲は deployment ごとの SKU で決まる**。利用者が越境を認識のうえ複数モデルから選べる方針とする。
+
+> ⚠️ **当初は「国内完結（regional Standard）を既定」に設計したが、2026-07 時点の japaneast では
+> regional Standard 対応チャット（gpt-4o / gpt-4.1-mini）が両方 Deprecating で新規デプロイ不可**のため、
+> **現状の既定は DataZone（APAC 処理）**。保管は日本国内のまま。詳細は下「モデル提供の制約」と
+> [README「実測で分かった制約」](../README.md)。
 
 | 区分 | 範囲 | 決まり方 |
 |---|---|---|
 | **保管（data at rest）** | 指定 geography = **日本国内**（全 SKU 共通） | リソースの location |
 | **推論処理（inference）** | deployment の SKU による（下表） | deployment ごとの `sku` |
 
-- **SKU（環境）ごとの推論処理範囲**。deployment 名に residency を含めて可視化する:
+- **SKU（環境）ごとの推論処理範囲**:
 
   | SKU | 保管 | 推論処理 | 本基盤での利用 |
   |---|---|---|---|
-  | **regional Standard** | 日本国内 | **japaneast 単独**（国外へ出ない） | 既定 `*-jp`（国内完結） |
-  | DataZone Standard | 日本国内 | アジア太平洋圏内（**日本以外の APAC も**あり得る。米国・EU には出ない） | `*-apac`（GPT-5 / DeepSeek 等） |
+  | regional Standard | 日本国内 | **japaneast 単独**（国外へ出ない） | 採用したいが**現状チャット配備不可**（Deprecating） |
+  | **DataZone Standard** | 日本国内 | アジア太平洋圏内（**日本以外の APAC も**あり得る。米国・EU には出ない） | ✅ 現状の実配備先（`*-apac`） |
   | Global Standard | 日本国内 | 全世界（**米国を含む**） | 原則不使用 |
 
 - 「米国で処理されるリスク」は **DataZone(APAC) では無く、Global にのみ有る**（APAC データゾーンに米国は含まれない）
@@ -60,10 +66,10 @@ deployment として混在配備**する。利用者は違い（後述の reside
 
 **提供モデルは SKU × リージョンで決まる**（japaneast / 2026-07 時点、詳細は [README のマトリクス](../README.md)）:
 
-- **regional Standard（国内完結）**: OpenAI の `gpt-4.1-mini` / `gpt-4o` のみ。**GPT-5 系・非 OpenAI モデルは非対応**
-- **DataZone Standard（APAC）**: GPT-5 系（`gpt-5.3-codex` / `gpt-5.4-mini` 等）、DeepSeek / Grok / Mistral 等が利用可
-- したがって「GPT-5 や DeepSeek を使う」＝「APAC 越境を受け入れる」というトレードオフになる（既定 `*-jp` は国内完結を維持）
-- 最新の提供状況・正確なモデル名/バージョン/format は必ず確認する:
+- **regional Standard（国内完結）**: OpenAI の `gpt-4.1-mini` / `gpt-4o` のみ。**両方 Deprecating で新規デプロイ不可**（= 現状 国内完結チャットは配備できない）。GPT-5 系・非 OpenAI は非対応
+- **DataZone Standard（APAC）**: GPT-5 系（`gpt-5.2` / `gpt-5.3-codex` / `gpt-5.4-mini` 等）、DeepSeek / Grok / Mistral 等が利用可（ただし quota は別枠・枯渇し得る）
+- したがって当面は **全 deployment が DataZone（APAC 越境）**。国内完結は対応する非 Deprecating モデルが出るまで保留
+- lifecycle（Deprecating）と quota（空き TPM）も含め、提供状況は必ず確認する（[README「実測で分かった制約」](../README.md) の手順）:
 
   ```bash
   az cognitiveservices account list-models -n <account> -g <rg> \
@@ -74,7 +80,7 @@ deployment として混在配備**する。利用者は違い（後述の reside
 #### コスト・ガバナンス（複数モデル前提）
 
 - **deployment を増やすこと自体は無償**（Standard/DataZone は従量課金。アイドル deployment に固定費なし）
-- コストは「どのモデルが実際に使われたか」で動く。**高単価モデル（DataZone の GPT-5 / DeepSeek 等）は `capacity`（TPM）を小さく**設定し、worst-case の月コストを deployment 単位で封じ込める（既定: 国内軽量 50K / 越境高性能 20K）
+- コストは「どのモデルが実際に使われたか」で動く。**高単価モデル（DataZone の GPT-5 / DeepSeek 等）は `capacity`（TPM）を小さく**設定し、worst-case の月コストを deployment 単位で封じ込める（既定: 汎用 gpt-5.2 = 50K / 高性能 codex = 20K）
 - residency を絞るほど単価は上がりやすい（一般に Global ≤ DataZone ≤ regional）。実額は [Azure OpenAI 料金](https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/) で確認
 - Budget のソフト/ハードリミット（§5）は全 deployment に共通で効く。月次 KQL で **deployment 別（モデル別）消費**を可視化し、想定超なら TPM / Budget を調整する
 
@@ -91,7 +97,7 @@ deployment として混在配備**する。利用者は違い（後述の reside
   ──── api-key ────────▶│  │ AI Foundry (AIServices)   │─diag▶│ Log Analytics          │    │
        /openai/v1/      │  │  japaneast, Deny+許可IP   │      │  RequestResponse       │    │
    モデルは deployment名  │  │  deployments (混在):      │      │  + AllMetrics          │    │
-   でピッカー選択         │  │   - gpt41mini-jp  (国内)  │      └───────────────────────┘    │
+   でピッカー選択         │  │   - gpt5-apac     (APAC)  │      └───────────────────────┘    │
                         │  │   - gpt5codex-apac(APAC)  │              ▲ App Insights       │
                         │  │   - deepseek-apac (APAC)  │              │                    │
                         │  └──────────▲────────────────┘      ┌──────┴────────────────┐    │
@@ -119,7 +125,7 @@ deployment として混在配備**する。利用者は違い（後述の reside
 |---|---|---|
 | Resource Group | `rg-editor-openai` | 既存リソースと分離 |
 | AI Foundry (kind: AIServices) | `editor-aoai-<suffix>` | japaneast、custom subdomain、`disableLocalAuth: false` 維持。OpenAI/非OpenAI 両方をホスト |
-| モデル deployment ×N（既定 3） | `gpt41mini-jp` / `gpt5codex-apac` / `deepseek-apac` | SKU 混在（regional=国内 / DataZone=APAC）。高単価モデルは TPM を絞る（§1.1 コスト） |
+| モデル deployment ×N（既定 2＋P2で1） | `gpt5-apac` / `gpt5codex-apac`（P2: `deepseek-apac`） | 現状は全て DataZone（APAC）。国内完結は Deprecating で不可。高単価は TPM を絞る（§1.1） |
 | Key Vault | `kv-editor-aoai-<suffix>` | RBAC 認可。`editor-openai-key`（slot タグ付き）と `teams-webhook-url` |
 | Function App (Python 3.11, Linux 従量) | `func-editor-aoai-<suffix>` | System-assigned Managed Identity |
 | Log Analytics + App Insights | `log-` / `appi-editor-openai` | 診断ログ・Function 監視 |

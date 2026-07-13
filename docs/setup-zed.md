@@ -16,7 +16,8 @@ az keyvault secret show --vault-name <KV名> --name editor-openai-key --query va
 Settings → AI → LLM Providers → **Add OpenAI-compatible provider**、または `settings.json`:
 
 OpenAI / 非 OpenAI（DeepSeek 等）とも**同じ 1 プロバイダ**に登録できる（全モデル共通の `openai/v1` エンドポイント）。
-`name` は deployment 名をそのまま指定する。`-jp`=国内完結 / `-apac`=APAC 処理（越境）。
+`name` は deployment 名をそのまま指定する。`-apac`=APAC 処理（越境）。
+※ 現状は全モデルが `-apac`（国内完結は対応モデルが提供終了中のため不可。保管は日本国内）。
 
 ```jsonc
 {
@@ -26,8 +27,8 @@ OpenAI / 非 OpenAI（DeepSeek 等）とも**同じ 1 プロバイダ**に登録
         "api_url": "https://<resource>.openai.azure.com/openai/v1",
         "available_models": [
           {
-            "name": "gpt41mini-jp",       // deployment 名。国内完結・既定
-            "display_name": "社内: 軽量(国内完結)",
+            "name": "gpt5-apac",       // deployment 名。既定・汎用(gpt-5.2)。APAC 処理
+            "display_name": "社内: 汎用(APAC)",
             "max_tokens": 128000
           },
           {
@@ -55,13 +56,13 @@ OpenAI / 非 OpenAI（DeepSeek 等）とも**同じ 1 プロバイダ**に登録
 ## 3. 用途別プロファイルの作成
 
 Agent Panel → プロファイル切替 → 用途ごとにモデルとシステムプロンプトを割り当てる。
-モデルは機微度・性能要件で選ぶ（機微データは国内完結を優先）:
+モデルは性能要件で選ぶ（現状は全て APAC 処理。国内完結モデルが出たら機微データはそちらを優先）:
 
 | プロファイル | 推奨モデル | システムプロンプト |
 |---|---|---|
-| コーディング（既定/国内） | `gpt41mini-jp` | [prompts/coding-agent.md](../prompts/coding-agent.md) の本文 |
-| コーディング（高性能/越境可） | `gpt5codex-apac` or `deepseek-apac` | 同上 |
-| ログ解析 | `gpt41mini-jp` | [prompts/log-analysis.md](../prompts/log-analysis.md) の本文 |
+| コーディング（既定） | `gpt5-apac` | [prompts/coding-agent.md](../prompts/coding-agent.md) の本文 |
+| コーディング（高性能） | `gpt5codex-apac` or `deepseek-apac` | 同上 |
+| ログ解析 | `gpt5-apac` | [prompts/log-analysis.md](../prompts/log-analysis.md) の本文 |
 
 プロジェクト単位でコーディング規約を効かせたい場合は、リポジトリ直下の `.rules` に
 coding-agent.md の内容を置いてもよい（Zed が自動で読み込む）。
@@ -73,4 +74,4 @@ coding-agent.md の内容を置いてもよい（Zed が自動で読み込む）
 | 403 | 接続元 IP が allowlist 外 | `curl ifconfig.me` で自 IP 確認。オフィス回線 / VPN に切替 |
 | 401 | 旧キー失効 | 手順 1 で最新キーを取得して再設定 |
 | 401（全員・突然） | ハードリミット発動 | Teams の発動通知を確認。復旧を待つ |
-| モデルが見つからない | deployment 名の typo | `gpt41mini-jp` / `gpt5codex-apac` / `deepseek-apac` を確認 |
+| モデルが見つからない | deployment 名の typo | `gpt5-apac` / `gpt5codex-apac` / `deepseek-apac` を確認 |

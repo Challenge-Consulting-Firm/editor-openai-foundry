@@ -36,24 +36,26 @@ param seedInitialKey = bool(readEnvironmentVariable('SEED_INITIAL_KEY', 'false')
 // format は publisher: OpenAI 系='OpenAI'、DeepSeek='DeepSeek'、Grok='xAI'、Mistral='Mistral AI'、Phi='Microsoft'。
 // capacity は TPM 千単位。高単価モデル（DataZone の GPT-5/DeepSeek 等）は小さくして worst-case を封じ込める。
 //
-// 【既定 = フェーズ1】japaneast 実提供を確認済みの OpenAI 2 モデル（docs/deploy-staged.md）。
-// 非OpenAI（DeepSeek 等）は AIServices アカウント作成後に list-models で確認してから
-// フェーズ2 で追加する（下の phase2 例を参照）。
+// 【既定 = フェーズ1】japaneast で GA(配備可)を確認済みの DataZone OpenAI 2 モデル。
+// ※ 国内完結(regional Standard)チャットは 2026-07 時点 japaneast で配備可能モデルが無い
+//   （gpt-4o / gpt-4.1-mini が Deprecating で新規デプロイ不可）。対応モデルが出たら追加検討。
+//   保管は全モデル日本国内。推論は APAC 圏（docs/design.md §1.1）。
+// 非OpenAI（DeepSeek 等）は AIServices 作成後に list-models で確認してからフェーズ2 で追加。
 //
 // 【.env で上書き可】.env の MODEL_DEPLOYMENTS に JSON 文字列を設定すると、この既定を上書きする。
-//   例（1行で記述）:
-//   MODEL_DEPLOYMENTS=[{"name":"gpt41mini-jp","modelName":"gpt-4.1-mini","modelVersion":"2025-04-14","format":"OpenAI","sku":"Standard","capacity":50}]
 var defaultModelDeployments = [
   {
-    name: 'gpt41mini-jp' // 既定・国内完結。軽量コーディング/ログ解析
-    modelName: 'gpt-4.1-mini'
-    modelVersion: '2025-04-14'
+    name: 'gpt5-apac' // 既定・汎用/ログ解析/軽量コーディング。APAC 処理
+    // 本来は gpt-5.4-mini を使いたいが DataZone quota が枯渇(200/200)のため gpt-5.2 を採用。
+    // quota 増枠後に gpt-5.4-mini へ差し替え可
+    modelName: 'gpt-5.2'
+    modelVersion: '2025-12-11'
     format: 'OpenAI'
-    sku: 'Standard' // 国内単独処理
+    sku: 'DataZoneStandard'
     capacity: 50
   }
   {
-    name: 'gpt5codex-apac' // 高性能コーディング（OpenAI GPT-5 codex）。APAC 処理（越境）
+    name: 'gpt5codex-apac' // 高性能コーディング（OpenAI GPT-5 codex）。APAC 処理
     modelName: 'gpt-5.3-codex'
     modelVersion: '2026-02-24'
     format: 'OpenAI'

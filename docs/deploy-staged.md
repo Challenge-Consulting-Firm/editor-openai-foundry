@@ -10,11 +10,12 @@
 
 ## フェーズ1: OpenAI モデルでリソースを構築
 
-`main.bicepparam` の既定 `defaultModelDeployments` は、japaneast 実提供を確認済みの OpenAI 2 モデル:
+`main.bicepparam` の既定 `defaultModelDeployments` は、japaneast で GA(配備可) を確認済みの OpenAI 2 モデル。
+※ 国内完結(regional Standard)チャットは対応モデルが Deprecating のため現状不可 → 両方 DataZone(APAC):
 
 | deployment | モデル | SKU | 処理範囲 |
 |---|---|---|---|
-| `gpt41mini-jp` | gpt-4.1-mini (2025-04-14) | Standard | 🇯🇵 国内完結 |
+| `gpt5-apac` | gpt-5.2 (2025-12-11) | DataZoneStandard | 🌏 APAC |
 | `gpt5codex-apac` | gpt-5.3-codex (2026-02-24) | DataZoneStandard | 🌏 APAC |
 
 ```bash
@@ -22,7 +23,7 @@ cp .env.sample .env
 $EDITOR .env                          # IP・webhook・メール・予算を設定（MODEL_DEPLOYMENTS は空のまま）
 ./scripts/deploy.sh --first-run       # 初回のみ --first-run
 cd functions && func azure functionapp publish <functionAppName>
-./scripts/smoke-test.sh <keyVaultName> <endpoint>   # gpt41mini-jp / gpt5codex-apac が 200
+./scripts/smoke-test.sh <keyVaultName> <endpoint>   # gpt5-apac / gpt5codex-apac が 200
 ```
 
 ## フェーズ2: 非OpenAIモデル（DeepSeek 等）を確認して追加

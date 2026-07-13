@@ -23,29 +23,21 @@ param allowedIps array
 @description('モデル deployment 定義。要素: name / modelName / modelVersion / capacity(TPM千単位) / format(publisher, 省略時 OpenAI) / sku(省略時 Standard=regional/国内完結, DataZoneStandard=APAC)。deployment 名に residency を含めること')
 param modelDeployments array = [
   {
-    // 既定・国内完結。軽量コーディング/ログ解析。data は japaneast から出ない
-    name: 'gpt41mini-jp'
-    modelName: 'gpt-4.1-mini'
-    modelVersion: '2025-04-14'
+    // 既定・汎用/ログ解析/軽量コーディング。処理は APAC 圏。
+    // ※ 国内完結(regional Standard)チャットは japaneast で対応モデルが Deprecating のため現状不可
+    name: 'gpt5-apac'
+    modelName: 'gpt-5.2'
+    modelVersion: '2025-12-11'
     format: 'OpenAI'
-    sku: 'Standard'
+    sku: 'DataZoneStandard'
     capacity: 50
   }
   {
-    // 高性能コーディング（OpenAI GPT-5 codex）。処理は APAC 圏（越境）。TPM を絞りコスト封じ込め
+    // 高性能コーディング（OpenAI GPT-5 codex）。処理は APAC 圏。TPM を絞りコスト封じ込め
     name: 'gpt5codex-apac'
     modelName: 'gpt-5.3-codex'
     modelVersion: '2026-02-24'
     format: 'OpenAI'
-    sku: 'DataZoneStandard'
-    capacity: 20
-  }
-  {
-    // 代替の高性能コーディング（非 OpenAI）。処理は APAC 圏（越境）
-    name: 'deepseek-apac'
-    modelName: 'DeepSeek-V4-Pro'
-    modelVersion: ''
-    format: 'DeepSeek'
     sku: 'DataZoneStandard'
     capacity: 20
   }

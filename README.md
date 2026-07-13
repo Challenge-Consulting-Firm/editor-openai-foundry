@@ -9,15 +9,19 @@
 
 | deployment | モデル | 処理範囲 | フェーズ |
 |---|---|---|---|
-| `gpt41mini-jp` | gpt-4.1-mini (OpenAI) | 🇯🇵 国内完結 | 1（既定・確認済み） |
-| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | 🌏 APAC（越境） | 1（既定・確認済み） |
+| `gpt5-apac` | gpt-5.2 (OpenAI) | 🌏 APAC（越境） | 1（既定・軽量/ログ解析） |
+| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | 🌏 APAC（越境） | 1（既定・高性能コーディング） |
 | `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | 🌏 APAC（越境） | 2（AIServices 作成後に確認して追加） |
 
-利用者は違い（越境・コスト）を認識のうえ選択する前提。deployment 名の `-jp`/`-apac` で処理範囲が分かる。
+> ⚠️ **国内完結（regional Standard）チャットは 2026-07 時点の japaneast で配備できない**（対応モデルが Deprecating）。
+> 詳細は下記「[実測で分かった制約](#実測で分かった制約japaneast--2026-07)」。現状フェーズ1は DataZone（APAC 処理）で構成する。
+> 保管は全モデル日本国内のままだが、推論は APAC 圏になる。
+
+利用者は違い（越境・コスト）を認識のうえ選択する前提。deployment 名の `-apac` で処理範囲が分かる。
 全モデルは共通の `openai/v1` エンドポイント + 共通キーで使え、エディタ設定は 1 プロバイダで済む。
 
 非OpenAIモデルは AIServices アカウント作成後でないと `list-models` で確認できないため、
-**まず OpenAI 2モデルで構築 → DeepSeek 等を確認して追加**する段階デプロイを推奨（[docs/deploy-staged.md](docs/deploy-staged.md)）。
+**まず OpenAI モデルで構築 → DeepSeek 等を確認して追加**する段階デプロイを推奨（[docs/deploy-staged.md](docs/deploy-staged.md)）。
 
 - 原本指示書: [foundry-editor-access-instruction.md](foundry-editor-access-instruction.md)
 - 設計書: [docs/design.md](docs/design.md)
@@ -28,8 +32,8 @@
 
 | SKU（環境） | 保管 (at rest) | 推論処理 | 越境リスク | 本基盤での位置づけ |
 |---|---|---|---|---|
-| **regional Standard** | 日本国内 | **japaneast 単独** | 最小（国内完結） | ✅ 採用（`*-jp` 既定） |
-| DataZone Standard | 日本国内 | アジア太平洋圏内 | 中（**米国は含まない**） | ✅ 採用（`*-apac` 高性能/DeepSeek） |
+| **regional Standard** | 日本国内 | **japaneast 単独** | 最小（国内完結） | ⚠️ 採用したいが**現状チャット配備不可**（後述） |
+| DataZone Standard | 日本国内 | アジア太平洋圏内 | 中（**米国は含まない**） | ✅ 採用（`*-apac`。フェーズ1の実配備先） |
 | Global Standard | 日本国内 | 全世界 | 大（**米国を含む**） | 非採用 |
 
 ### 「保管」と「処理」の違い（なぜ環境で越境リスクが変わるか）
@@ -61,17 +65,17 @@ Global    │   🇯🇵 日本国内     →   🌐 全世界（処理国を特
 
 | モデル | regional Standard（国内完結） | DataZone Standard（APAC） | Global Standard（全世界） |
 |---|:---:|:---:|:---:|
-| gpt-4o (2024-11-20) | ◯ | − | ◯ |
-| **gpt-4.1-mini** (2025-04-14) | **◯ ← 既定** | − | ◯ |
+| gpt-4o (2024-11-20) | ◯ ⚠️Deprecating | − | ◯ |
+| gpt-4.1-mini (2025-04-14) | ◯ ⚠️Deprecating | − | ◯ |
 | gpt-4.1 (2025-04-14) | − | − | ◯ |
 | gpt-5.2 | − | ◯ | ◯ |
 | gpt-5.3-codex | − | ◯ | ◯ |
 | gpt-5.4-mini | − | ◯ | ◯ |
 | gpt-5.4 / gpt-5.5 / gpt-5.6-* | − | − | ◯ |
 
-要点:
-- **国内完結（regional Standard）で使えるチャットモデルは実質 `gpt-4o` と `gpt-4.1-mini` のみ**。GPT-5 系は不可
-- **GPT-5 系が必要な場合の最小越境は DataZone Standard**（`gpt-5.4-mini` / `gpt-5.3-codex` 等、処理はアジア太平洋圏内）
+要点（提供表ベース。ただし配備可否は下記「実測で分かった制約」を必ず参照）:
+- regional Standard（国内完結）でチャットに使えるのは `gpt-4o` / `gpt-4.1-mini` のみ。しかも**両方 Deprecating で新規デプロイ不可**
+- **GPT-5 系が必要な場合の最小越境は DataZone Standard**（`gpt-5.2` / `gpt-5.3-codex` / `gpt-5.4-mini` 等、処理はアジア太平洋圏内）
 - 最新版・最上位モデル（gpt-5.6 等）は Global Standard のみ
 
 ```bash
@@ -80,8 +84,57 @@ az cognitiveservices account list-models -n <account> -g <rg> \
   --query "[?kind=='OpenAI'].{model:name, version:version, skus:skus[].name}" -o table
 ```
 
-SKU / モデルの変更点は [infra/main.bicepparam](infra/main.bicepparam) の `modelDeployments` のみ
-（各要素に任意の `sku` を指定可。省略時は regional Standard）。背景は [docs/design.md §1.1](docs/design.md)。
+SKU / モデルの変更点は [infra/main.bicepparam](infra/main.bicepparam) の `defaultModelDeployments`
+（各要素に `sku` / `format` を指定可。省略時は Standard / OpenAI）、または `.env` の `MODEL_DEPLOYMENTS`。
+背景は [docs/design.md §1.1](docs/design.md)。
+
+## 実測で分かった制約（japaneast / 2026-07）
+
+`list-models`（提供有無）だけでは配備できない。**lifecycle（Deprecating）と quota（空き TPM）**の両方を満たす必要がある。
+実際に what-if / デプロイ検証して判明した制約:
+
+### 1. 国内完結（regional Standard）チャットは現状デプロイ不可
+
+- regional Standard 対応のチャットは `gpt-4o (2024-11-20)` / `gpt-4.1-mini (2025-04-14)` のみ
+- **両方とも lifecycle が `Deprecating`（2026-10 提供終了）で、新規デプロイがブロックされる**
+  （preflight: *"model ... is in deprecating state and cannot be used for new deployments"*）
+- → **推論を japaneast 単独に閉じる構成は、対応する非 Deprecating モデルが出るまで取れない**
+- 保管は日本国内のままなので、当面は DataZone（APAC 処理）で運用する
+
+### 2. DataZone は GA だが quota は別枠・枯渇し得る
+
+japaneast の DataZone GA チャットと、この検証サブスクリプションでの TPM quota 空き（1000 TPM 単位）:
+
+| モデル | lifecycle | DataZone quota（used / limit） | 判定 |
+|---|---|---|---|
+| gpt-5.2 | GA | 50 / 300（空き 250） | ✅ 採用（`gpt5-apac`） |
+| gpt-5.3-codex | GA | 0 / 300（空き 300） | ✅ 採用（`gpt5codex-apac`） |
+| gpt-5.4-mini | GA | **200 / 200（空き 0）** | ✗ quota 枯渇。当初これで失敗 |
+
+- `gpt-5.4-mini` の quota は既存 OPSNOTE が消費（prod 150 + eval 50 = 200）。空き 0 のため配備できなかった
+- → 既定を quota に余裕のある **`gpt-5.2`** に差し替えた（`gpt-5.4-mini` を使いたければ quota 増枠 or 他 deployment 削減）
+
+### 3. デプロイ前チェックリスト
+
+```bash
+# (a) lifecycle 確認（Deprecating を避ける。GenerallyAvailable を選ぶ）
+az cognitiveservices account list-models -n <account> -g <rg> \
+  --query "[?format=='OpenAI'].{model:name,ver:version,life:lifecycleStatus,skus:join(',',skus[].name)}" -o table
+
+# (b) quota（空き TPM）確認。free = limit - currentValue が capacity 以上あること
+az cognitiveservices usage list -l japaneast \
+  --query "[?contains(name.value,'DataZoneStandard')].{q:name.value,used:currentValue,limit:limit}" -o table
+
+# (c) テンプレート検証（read-only。実リソースは作られない）
+./scripts/deploy.sh   # 内部で what-if → 確認プロンプト
+```
+
+### フェーズ1の実構成（確定）
+
+| deployment | モデル | SKU | TPM | 用途 |
+|---|---|---|---|---|
+| `gpt5-apac` | gpt-5.2 | DataZoneStandard | 50 | 既定・汎用/ログ解析/軽量コーディング |
+| `gpt5codex-apac` | gpt-5.3-codex | DataZoneStandard | 20 | 高性能コーディング |
 
 ## 参考: 他ベンダーモデルの評価（japaneast / 2026-07 時点）
 
