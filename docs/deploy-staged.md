@@ -27,6 +27,11 @@ cd functions && func azure functionapp publish <functionAppName>
 
 ## フェーズ2: 非OpenAIモデル（DeepSeek 等）を確認して追加
 
+> **📌 現在の状態（2026-07-13）: 保留中。** 実測の結果、この環境では非OpenAIモデルが
+> **全て GlobalStandard のみ**（DataZone 提供なし）だった。Global は米国を含む全世界処理となり
+> 越境ポリシーと両立しないため、**DataZone で提供されるまでフェーズ2は見送り**（README「実測で分かった制約 §5」）。
+> 定期的に下記手順 1 を再実行し、DataZoneStandard 付きの非OpenAIモデルが現れたら再開する。
+
 1. できた **AIServices アカウント**に対して提供モデルを確認（`<account>` はデプロイ出力の名前）:
 
    ```bash

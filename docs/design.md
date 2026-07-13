@@ -20,7 +20,7 @@ deployment として混在配備**する。利用者は違い（後述の reside
 | deployment 名 | モデル | SKU / 処理範囲 | 主用途 | フェーズ |
 |---|---|---|---|---|
 | `gpt5-apac` | gpt-5.2 (OpenAI) | DataZone / 🌏 APAC（越境） | **既定・主力**。コーディング / ログ解析とも | 1 |
-| `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | DataZone / 🌏 APAC（越境） | 代替の高性能コーディング | 2（確認後追加） |
+| `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | DataZone / 🌏 APAC（越境） | 代替の高性能コーディング | 2（**保留**: 実環境は Global のみ提供。[deploy-staged.md](deploy-staged.md)） |
 
 > gpt-5.2 採用理由: **codex 系（gpt-5.3-codex）は Chat Completions 非対応（Responses API 専用）**で Zed/VS Code から使えないため（§1.1）。
 > Codex CLI 等 Responses API クライアント向けに codex を別 deployment で追加することは可能。
