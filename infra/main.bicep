@@ -23,23 +23,14 @@ param allowedIps array
 @description('モデル deployment 定義。要素: name / modelName / modelVersion / capacity(TPM千単位) / format(publisher, 省略時 OpenAI) / sku(省略時 Standard=regional/国内完結, DataZoneStandard=APAC)。deployment 名に residency を含めること')
 param modelDeployments array = [
   {
-    // 既定・汎用/ログ解析/軽量コーディング。処理は APAC 圏。
+    // 既定・主力（コーディング/ログ解析とも）。GPT-5 codex。処理は APAC 圏。
     // ※ 国内完結(regional Standard)チャットは japaneast で対応モデルが Deprecating のため現状不可
-    name: 'gpt5-apac'
-    modelName: 'gpt-5.2'
-    modelVersion: '2025-12-11'
-    format: 'OpenAI'
-    sku: 'DataZoneStandard'
-    capacity: 50
-  }
-  {
-    // 高性能コーディング（OpenAI GPT-5 codex）。処理は APAC 圏。TPM を絞りコスト封じ込め
     name: 'gpt5codex-apac'
     modelName: 'gpt-5.3-codex'
     modelVersion: '2026-02-24'
     format: 'OpenAI'
     sku: 'DataZoneStandard'
-    capacity: 20
+    capacity: 50
   }
 ]
 

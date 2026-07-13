@@ -19,9 +19,10 @@ deployment として混在配備**する。利用者は違い（後述の reside
 
 | deployment 名 | モデル | SKU / 処理範囲 | 主用途 | フェーズ |
 |---|---|---|---|---|
-| `gpt5-apac` | gpt-5.2 (OpenAI) | DataZone / 🌏 APAC（越境） | 既定。汎用 / ログ解析 / 軽量コーディング | 1 |
-| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | DataZone / 🌏 APAC（越境） | 高性能コーディング | 1 |
+| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | DataZone / 🌏 APAC（越境） | **既定・主力**。コーディング / ログ解析とも | 1 |
 | `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | DataZone / 🌏 APAC（越境） | 代替の高性能コーディング | 2（確認後追加） |
+
+> 汎用モデルを併用したい場合は `gpt-5.2` を second deployment として追加できる（quota 空きあり）。
 
 > ⚠️ **国内完結（regional Standard）チャットは現状 japaneast で配備不可**（対応モデルが Deprecating）。§1.1 と
 > [README「実測で分かった制約」](../README.md)を参照。当面は全 deployment が DataZone（APAC 処理）になる。
@@ -80,7 +81,7 @@ deployment として混在配備**する。利用者は違い（後述の reside
 #### コスト・ガバナンス（複数モデル前提）
 
 - **deployment を増やすこと自体は無償**（Standard/DataZone は従量課金。アイドル deployment に固定費なし）
-- コストは「どのモデルが実際に使われたか」で動く。**高単価モデル（DataZone の GPT-5 / DeepSeek 等）は `capacity`（TPM）を小さく**設定し、worst-case の月コストを deployment 単位で封じ込める（既定: 汎用 gpt-5.2 = 50K / 高性能 codex = 20K）
+- コストは「どのモデルが実際に使われたか」で動く。**高単価モデル（DataZone の GPT-5 / DeepSeek 等）は `capacity`（TPM）を小さく**設定し、worst-case の月コストを deployment 単位で封じ込める（既定: 主力 gpt-5.3-codex = 50K）
 - residency を絞るほど単価は上がりやすい（一般に Global ≤ DataZone ≤ regional）。実額は [Azure OpenAI 料金](https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/) で確認
 - Budget のソフト/ハードリミット（§5）は全 deployment に共通で効く。月次 KQL で **deployment 別（モデル別）消費**を可視化し、想定超なら TPM / Budget を調整する
 
@@ -97,9 +98,9 @@ deployment として混在配備**する。利用者は違い（後述の reside
   ──── api-key ────────▶│  │ AI Foundry (AIServices)   │─diag▶│ Log Analytics          │    │
        /openai/v1/      │  │  japaneast, Deny+許可IP   │      │  RequestResponse       │    │
    モデルは deployment名  │  │  deployments (混在):      │      │  + AllMetrics          │    │
-   でピッカー選択         │  │   - gpt5-apac     (APAC)  │      └───────────────────────┘    │
-                        │  │   - gpt5codex-apac(APAC)  │              ▲ App Insights       │
-                        │  │   - deepseek-apac (APAC)  │              │                    │
+   でピッカー選択         │  │   - gpt5codex-apac(APAC)  │      └───────────────────────┘    │
+                        │  │   （P2: deepseek-apac）    │              ▲ App Insights       │
+                        │  │                            │              │                    │
                         │  └──────────▲────────────────┘      ┌──────┴────────────────┐    │
                         │             │ keys regenerate /     │ Function App (Python)  │    │
                         │             │ disableLocalAuth      │  - rotate_key (timer)  │    │
@@ -125,7 +126,7 @@ deployment として混在配備**する。利用者は違い（後述の reside
 |---|---|---|
 | Resource Group | `rg-editor-openai` | 既存リソースと分離 |
 | AI Foundry (kind: AIServices) | `editor-aoai-<suffix>` | japaneast、custom subdomain、`disableLocalAuth: false` 維持。OpenAI/非OpenAI 両方をホスト |
-| モデル deployment ×N（既定 2＋P2で1） | `gpt5-apac` / `gpt5codex-apac`（P2: `deepseek-apac`） | 現状は全て DataZone（APAC）。国内完結は Deprecating で不可。高単価は TPM を絞る（§1.1） |
+| モデル deployment（既定 1＋P2で1） | `gpt5codex-apac`（P2: `deepseek-apac`） | 現状は全て DataZone（APAC）。国内完結は Deprecating で不可。高単価は TPM を絞る（§1.1） |
 | Key Vault | `kv-editor-aoai-<suffix>` | RBAC 認可。`editor-openai-key`（slot タグ付き）と `teams-webhook-url` |
 | Function App (Python 3.11, Linux 従量) | `func-editor-aoai-<suffix>` | System-assigned Managed Identity |
 | Log Analytics + App Insights | `log-` / `appi-editor-openai` | 診断ログ・Function 監視 |

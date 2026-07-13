@@ -15,8 +15,8 @@ az keyvault secret show --vault-name <KV名> --name editor-openai-key --query va
 1. Copilot Chat → モデルピッカー → **Manage Models...**
 2. プロバイダに **Azure** を選択
 3. エンドポイントに `https://<resource>.openai.azure.com/openai/v1/`、API キーを入力
-4. deployment 名をモデルとして追加（OpenAI/非OpenAI とも同一エンドポイントで可）:
-   `gpt5-apac`（汎用・既定）/ `gpt5codex-apac`（高性能）/ `deepseek-apac`（非OpenAI）。いずれも APAC 処理
+4. deployment 名をモデルとして追加: `gpt5codex-apac`（既定・主力）。
+   フェーズ2で `deepseek-apac`（非OpenAI）も同一エンドポイントで追加可。いずれも APAC 処理
 
 以後、チャットのモデルピッカーで用途・機微度に応じて切り替える（`-apac` は越境）。
 システムプロンプトを効かせたい場合はワークスペースの `.github/copilot-instructions.md` に
@@ -28,30 +28,22 @@ az keyvault secret show --vault-name <KV名> --name editor-openai-key --query va
 
 ```yaml
 models:
-  - name: 社内: 汎用(APAC)
+  - name: 社内: GPT-5 codex(APAC)
     provider: azure
-    model: gpt5-apac          # deployment 名。既定・汎用(gpt-5.2)。APAC 処理
+    model: gpt5codex-apac       # deployment 名。既定・主力(gpt-5.3-codex)。APAC 処理
     apiBase: https://<resource>.openai.azure.com/openai/v1/
     apiKey: <ここには書かず、環境変数か Continue の secrets 機能を使う>
     systemMessage: |
       # prompts/coding-agent.md の本文を貼る
-  - name: 社内: GPT-5 codex(APAC 越境)
-    provider: azure
-    model: gpt5codex-apac
-    apiBase: https://<resource>.openai.azure.com/openai/v1/
-    apiKey: <同上>
-    systemMessage: |
-      # prompts/coding-agent.md の本文を貼る
-  - name: 社内: DeepSeek(APAC 越境)
-    provider: azure
-    model: deepseek-apac         # 非 OpenAI も同一エンドポイントで可
-    apiBase: https://<resource>.openai.azure.com/openai/v1/
-    apiKey: <同上>
-    systemMessage: |
-      # prompts/coding-agent.md の本文を貼る
+  # フェーズ2で追加（非 OpenAI も同一エンドポイントで可）:
+  # - name: 社内: DeepSeek(APAC)
+  #   provider: azure
+  #   model: deepseek-apac
+  #   apiBase: https://<resource>.openai.azure.com/openai/v1/
+  #   apiKey: <同上>
 ```
 
-ログ解析は既定の `gpt5-apac`（gpt-5.2）を推奨。`systemMessage` に
+ログ解析も既定の `gpt5codex-apac`（gpt-5.3-codex）を使う。`systemMessage` に
 [prompts/log-analysis.md](../prompts/log-analysis.md) を貼ったエントリを別途用意する。
 
 **キーの平文を設定ファイルに書かない**（利用規約違反）。Continue の secrets / 環境変数参照を使う。

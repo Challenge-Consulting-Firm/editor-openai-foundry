@@ -45,22 +45,14 @@ param seedInitialKey = bool(readEnvironmentVariable('SEED_INITIAL_KEY', 'false')
 // 【.env で上書き可】.env の MODEL_DEPLOYMENTS に JSON 文字列を設定すると、この既定を上書きする。
 var defaultModelDeployments = [
   {
-    name: 'gpt5-apac' // 既定・汎用/ログ解析/軽量コーディング。APAC 処理
-    // 本来は gpt-5.4-mini を使いたいが DataZone quota が枯渇(200/200)のため gpt-5.2 を採用。
-    // quota 増枠後に gpt-5.4-mini へ差し替え可
-    modelName: 'gpt-5.2'
-    modelVersion: '2025-12-11'
-    format: 'OpenAI'
-    sku: 'DataZoneStandard'
-    capacity: 50
-  }
-  {
-    name: 'gpt5codex-apac' // 高性能コーディング（OpenAI GPT-5 codex）。APAC 処理
+    name: 'gpt5codex-apac' // 既定・主力（コーディング/ログ解析とも）。GPT-5 codex。APAC 処理
+    // gpt-5.4-mini は quota 枯渇(200/200)かつ性能面でも主力に不足のため不採用。codex を主軸にする。
+    // DataZone quota 空き 300（capacity に余裕あり）
     modelName: 'gpt-5.3-codex'
     modelVersion: '2026-02-24'
     format: 'OpenAI'
     sku: 'DataZoneStandard'
-    capacity: 20 // 高単価のため絞る
+    capacity: 50
   }
 ]
 

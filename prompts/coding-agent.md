@@ -1,7 +1,7 @@
 # コーディングエージェント用システムプロンプト
 
 エディタのコーディング用プロファイルに設定するシステムプロンプト。
-モデルは性能要件で選ぶ（`gpt5-apac`=汎用 / `gpt5codex-apac`=高性能コーディング。いずれも APAC 処理）。
+既定モデルは `gpt5codex-apac`（gpt-5.3-codex、APAC 処理）。フェーズ2で `deepseek-apac` も選べる。
 Zed: Agent Panel の設定 → プロファイル → System Prompt / `.rules` ファイル。
 VS Code (Continue): config の `systemMessage`。
 

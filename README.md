@@ -9,8 +9,7 @@
 
 | deployment | モデル | 処理範囲 | フェーズ |
 |---|---|---|---|
-| `gpt5-apac` | gpt-5.2 (OpenAI) | 🌏 APAC（越境） | 1（既定・軽量/ログ解析） |
-| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | 🌏 APAC（越境） | 1（既定・高性能コーディング） |
+| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | 🌏 APAC（越境） | 1（既定・主力。コーディング/ログ解析とも） |
 | `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | 🌏 APAC（越境） | 2（AIServices 作成後に確認して追加） |
 
 > ⚠️ **国内完結（regional Standard）チャットは 2026-07 時点の japaneast で配備できない**（対応モデルが Deprecating）。
@@ -107,12 +106,12 @@ japaneast の DataZone GA チャットと、この検証サブスクリプショ
 
 | モデル | lifecycle | DataZone quota（used / limit） | 判定 |
 |---|---|---|---|
-| gpt-5.2 | GA | 50 / 300（空き 250） | ✅ 採用（`gpt5-apac`） |
-| gpt-5.3-codex | GA | 0 / 300（空き 300） | ✅ 採用（`gpt5codex-apac`） |
-| gpt-5.4-mini | GA | **200 / 200（空き 0）** | ✗ quota 枯渇。当初これで失敗 |
+| gpt-5.3-codex | GA | 0 / 300（空き 300） | ✅ **採用（`gpt5codex-apac`・主力）** |
+| gpt-5.2 | GA | 50 / 300（空き 250） | 代替候補（汎用） |
+| gpt-5.4-mini | GA | **200 / 200（空き 0）** | ✗ quota 枯渇＋性能不足で不採用 |
 
-- `gpt-5.4-mini` の quota は既存 OPSNOTE が消費（prod 150 + eval 50 = 200）。空き 0 のため配備できなかった
-- → 既定を quota に余裕のある **`gpt-5.2`** に差し替えた（`gpt-5.4-mini` を使いたければ quota 増枠 or 他 deployment 削減）
+- `gpt-5.4-mini` の quota は既存 OPSNOTE が消費（prod 150 + eval 50 = 200）。空き 0。かつ主力には性能不足のため不採用
+- → 主力を **`gpt-5.3-codex`**（quota 空き 300）に統一。汎用が別途必要なら `gpt-5.2` を second deployment として追加可
 
 ### 3. デプロイ前チェックリスト
 
@@ -133,8 +132,10 @@ az cognitiveservices usage list -l japaneast \
 
 | deployment | モデル | SKU | TPM | 用途 |
 |---|---|---|---|---|
-| `gpt5-apac` | gpt-5.2 | DataZoneStandard | 50 | 既定・汎用/ログ解析/軽量コーディング |
-| `gpt5codex-apac` | gpt-5.3-codex | DataZoneStandard | 20 | 高性能コーディング |
+| `gpt5codex-apac` | gpt-5.3-codex | DataZoneStandard | 50 | 既定・主力（コーディング/ログ解析とも） |
+
+> 汎用モデルを併用したい場合は `gpt-5.2`（quota 空きあり）を second deployment として追加できる。
+> 非OpenAI の DeepSeek はフェーズ2で追加（[docs/deploy-staged.md](docs/deploy-staged.md)）。
 
 ## 参考: 他ベンダーモデルの評価（japaneast / 2026-07 時点）
 
