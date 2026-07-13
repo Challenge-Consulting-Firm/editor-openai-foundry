@@ -27,15 +27,26 @@ OpenAI / 非 OpenAI（DeepSeek 等）とも**同じ 1 プロバイダ**に登録
   "language_models": {
     "openai_compatible": {
       "社内 Foundry": {
-        "api_url": "https://<resource>.openai.azure.com/openai/v1",
+        "api_url": "https://<resource>.openai.azure.com/openai/v1",  // 末尾スラッシュなし
         "available_models": [
           {
-            "name": "gpt5-apac",      // deployment 名。既定・主力(gpt-5.2)。APAC 処理
+            "name": "gpt5-apac",      // 必ず deployment 名（モデル名 "gpt-5.2" だと 404）
             "display_name": "社内: GPT-5.2(APAC)",
-            "max_tokens": 128000
+            "max_tokens": 200000,
+            "max_output_tokens": 32000,
+            "max_completion_tokens": 200000,
+            "capabilities": {
+              "tools": true,
+              "images": false,
+              "parallel_tool_calls": false,
+              "prompt_cache_key": false,
+              "chat_completions": true,
+              // ★必須★ GPT-5 系は旧 max_tokens パラメータを拒否（HTTP 400）するため、
+              // false にして Zed に max_completion_tokens を送らせる
+              "max_tokens_parameter": false
+            }
           }
-          // フェーズ2で deepseek-apac 等を追加したら、ここに同形式で足す:
-          // ,{ "name": "deepseek-apac", "display_name": "社内: DeepSeek(APAC)", "max_tokens": 128000 }
+          // フェーズ2で deepseek-apac 等を追加したら、ここに同形式で足す
         ]
       }
     }
@@ -43,6 +54,9 @@ OpenAI / 非 OpenAI（DeepSeek 等）とも**同じ 1 プロバイダ**に登録
 }
 ```
 
+- **`capabilities.max_tokens_parameter: false` は GPT-5 系で必須**。無いと
+  「Azure Foundry's API returned an unexpected error」（実体は 400: Unsupported parameter 'max_tokens'）になる
+- **`name` は deployment 名**（`gpt5-apac`）。モデル ID（`gpt-5.2`）を書くと 404 DeploymentNotFound
 - API キーは **UI から入力**（macOS keychain に保管される）。
   **`settings.json` や dotfiles にキーを書かない**（利用規約違反）
 - `api_url` の `<resource>` はリソース名（運用者の案内 or `main.bicep` 出力 `openAiV1BaseUrl` 参照）
@@ -69,4 +83,5 @@ coding-agent.md の内容を置いてもよい（Zed が自動で読み込む）
 | 403 | 接続元 IP が allowlist 外 | `curl ifconfig.me` で自 IP 確認。オフィス回線 / VPN に切替 |
 | 401 | 旧キー失効 | 手順 1 で最新キーを取得して再設定 |
 | 401（全員・突然） | ハードリミット発動 | Teams の発動通知を確認。復旧を待つ |
-| モデルが見つからない | deployment 名の typo | `gpt5-apac`（P2で `deepseek-apac`）を確認 |
+| unexpected error | Zed が `max_tokens` を送っている（GPT-5 系は 400 で拒否） | モデル設定に `"capabilities": {"max_tokens_parameter": false}` を追加（手順 2） |
+| 404 / モデルが見つからない | `name` にモデル ID を書いている | `name` は deployment 名 `gpt5-apac`（P2で `deepseek-apac`） |
