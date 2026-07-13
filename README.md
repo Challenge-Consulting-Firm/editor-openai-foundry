@@ -21,6 +21,28 @@
 | DataZone Standard | 日本国内 | アジア太平洋圏内 | 中（国外処理あり得る） | GPT-5 が必要なら選択肢 |
 | Global Standard | 日本国内 | 全世界 | 大 | 非推奨 |
 
+### 「保管」と「処理」の違い（なぜ環境で越境リスクが変わるか）
+
+データの持ち方は 2 層に分かれる。**3 つの SKU で「保管」は同じ（日本国内）**で、違うのは**「処理」の場所だけ**。
+
+| 層 | 意味 | 3 SKU での違い |
+|---|---|---|
+| **保管 (at rest)** | ディスクに保存されるデータ（学習ファイル・バッチ入出力・保存された会話など）の物理保管先 | **違わない** — 3 つとも指定 geography = **日本国内** |
+| **処理 (inference)** | 送ったプロンプトを実際に計算し応答を返す**データセンターの場所** | **これだけが違う**（下図） |
+
+```
+                 保管(at rest)        処理(inference)
+regional  │   🇯🇵 日本国内     →   🇯🇵 japaneast 単独（国外に出ない）
+DataZone  │   🇯🇵 日本国内     →   🌏 アジア太平洋圏内（日本以外のAPAC各国もあり得る）
+Global    │   🇯🇵 日本国内     →   🌐 全世界（処理国を特定できない）
+```
+
+- チャット/コーディング用途ではプロンプト本文は基本ディスク保管されない（ステートレス処理）。
+  そのため越境の実体は **「処理のために一瞬どのデータセンターを通るか」**。保管先が同じ日本でも、
+  この処理経路が国外を通るかどうかで `regional < DataZone < Global` の順にリスクが上がる
+- Azure OpenAI は既定でプロンプトをモデル学習に使わない。別枠の不正利用モニタリング（最大 30 日保存）は
+  承認を得てデータ非保持に無効化可能で、この保存も geography 内（日本）に留まる
+
 ## 使えるモデル × 環境マトリクス（japaneast / 2026-07 時点）
 
 チャット／コーディング用途で関係するモデルのみ抜粋。◯=提供あり、−=提供なし。
@@ -49,6 +71,44 @@ az cognitiveservices account list-models -n <account> -g <rg> \
 
 SKU / モデルの変更点は [infra/main.bicepparam](infra/main.bicepparam) の `modelDeployments` のみ
 （各要素に任意の `sku` を指定可。省略時は regional Standard）。背景は [docs/design.md §1.1](docs/design.md)。
+
+## 参考: 他ベンダーモデルの評価（japaneast / 2026-07 時点）
+
+OpenAI 以外にも Azure から直接提供されるモデル（DeepSeek・xAI Grok・Mistral・Moonshot Kimi 等）がある。
+コーディング / ログ解析用途で候補になり得るものを、**環境（越境リスク）× 提供可否**で評価する。◯=提供あり、−=なし。
+
+| モデル | ベンダー | 位置づけ（用途の目安） | regional（国内完結） | DataZone（APAC） | Global（全世界） |
+|---|---|---|:---:|:---:|:---:|
+| DeepSeek-V4-Pro | DeepSeek | 推論・コーディング志向、コスト効率が高いとされる | − | ◯ | ◯ |
+| DeepSeek-V4-Flash | DeepSeek | 上記の軽量・低コスト版 | − | ◯ | ◯ |
+| DeepSeek-V3.1 / V3.2 | DeepSeek | 前世代。ログ解析など汎用 | − | − | ◯ |
+| grok-4.3 | xAI | 大規模推論、長文脈 | − | ◯ | ◯ |
+| grok-4-1-fast (reasoning) | xAI | 低レイテンシ・推論バランス型 | − | ◯ | ◯ |
+| Mistral-Large-3 | Mistral (EU) | 汎用・多言語、欧州ベンダー | − | ◯ | ◯ |
+| mistral-medium-3-5 | Mistral (EU) | 中量・コスト効率 | − | ◯ | ◯ |
+| Kimi-K2.7-Code | Moonshot | **コーディング特化** | − | − | ◯ |
+| Llama-4-Maverick | Meta | オープンウェイト系汎用 | − | − | ◯ |
+| Phi-4 / Phi-4-reasoning | Microsoft | 小型・低コスト、軽い解析向き | − | − | ◯ |
+
+### 評価の要点
+
+- **国内完結（regional Standard）に非 OpenAI のチャットモデルは 1 つも無い**。
+  データを日本国外に一切出さない前提を貫くなら、選択肢は実質 OpenAI の `gpt-4.1-mini` / `gpt-4o` に限られる
+- **DataZone（APAC 内処理）まで許容すると幅が広がる**:
+  - コーディング → `DeepSeek-V4-Pro`、`grok-4.3`、`gpt-5.3-codex`(OpenAI) が有力候補
+  - ログ解析 → `mistral-medium-3-5`、`DeepSeek-V4-Flash`、`gpt-5.4-mini`(OpenAI) がコスト効率良
+- **コーディング特化の Kimi-K2.7-Code や最小・低コストの Phi-4 は Global のみ**（越境大）
+
+### ⚠️ 重要: 非 OpenAI モデルはリソース種別が異なる
+
+これらは「Foundry Models sold by Azure」で、**Azure AI Foundry リソース（`kind: AIServices`）**が必要。
+本基盤の現構成は `kind: OpenAI`（OpenAI モデル専用）のため、**そのままでは非 OpenAI モデルを使えない**。
+採用する場合は AIServices リソースを別途立てる（or 差し替える）改修が必要になる。residency の SKU 概念
+（regional / DataZone / Global）は同じで、endpoint も OpenAI 互換なのでエディタ側設定は流用できる。
+
+> 上表は提供可否（事実）に基づく。モデルの能力評価はベンダーの位置づけに基づく参考であり、
+> 実採用時は対象タスクでの実測（同一プロンプトで A/B 比較）を推奨する。提供状況は
+> [Foundry Models 提供リージョン表](https://learn.microsoft.com/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure-region-availability) で最新を確認すること。
 
 ## 構成
 
