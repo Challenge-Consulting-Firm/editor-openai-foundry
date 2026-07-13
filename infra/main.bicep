@@ -30,7 +30,7 @@ param modelDeployments array = [
     modelVersion: '2026-02-24'
     format: 'OpenAI'
     sku: 'DataZoneStandard'
-    capacity: 50
+    capacity: 200
   }
 ]
 

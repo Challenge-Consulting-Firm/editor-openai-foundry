@@ -8,10 +8,14 @@ param resourceGroupName = readEnvironmentVariable('RESOURCE_GROUP', 'rg-editor-o
 param location = readEnvironmentVariable('LOCATION', 'japaneast')
 param baseName = readEnvironmentVariable('BASE_NAME', 'editor-aoai')
 
-// ALLOWED_IPS: カンマ区切りのグローバル IP。/32 なしは自動付与。空要素は除外
+// ALLOWED_IPS: カンマ区切りのグローバル IP。空要素は除外。
+// Cognitive Services の networkAcls は単一 IP に /32・/31 を付けられない（バレア IP 必須）。
+// そこで /32・/31 は外してバレア IP にし、/24 等の実レンジはそのまま通す。
 param allowedIps = map(
   filter(split(readEnvironmentVariable('ALLOWED_IPS', ''), ','), s => !empty(trim(s))),
-  s => { value: contains(trim(s), '/') ? trim(s) : '${trim(s)}/32' }
+  s => {
+    value: (endsWith(trim(s), '/32') || endsWith(trim(s), '/31')) ? split(trim(s), '/')[0] : trim(s)
+  }
 )
 
 param teamsWebhookUrl = readEnvironmentVariable('TEAMS_WEBHOOK_URL', '')
@@ -52,7 +56,7 @@ var defaultModelDeployments = [
     modelVersion: '2026-02-24'
     format: 'OpenAI'
     sku: 'DataZoneStandard'
-    capacity: 50
+    capacity: 200 // 200K TPM。gpt-5.3-codex の DataZone quota 空き 300 に収まる
   }
 ]
 
