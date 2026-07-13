@@ -33,17 +33,17 @@ param seedInitialKey = bool(readEnvironmentVariable('SEED_INITIAL_KEY', 'false')
 //   sku: 'Standard'         → 推論も japaneast 単独（国内完結）
 //   sku: 'DataZoneStandard' → 推論は APAC 圏（日本国外もあり得る = 越境）
 // deployment 名に residency（-jp / -apac）を含め、利用者が越境を認識できるようにする。
-//
 // format は publisher: OpenAI 系='OpenAI'、DeepSeek='DeepSeek'、Grok='xAI'、Mistral='Mistral AI'、Phi='Microsoft'。
+// capacity は TPM 千単位。高単価モデル（DataZone の GPT-5/DeepSeek 等）は小さくして worst-case を封じ込める。
 //
-// !!! デプロイ前に必ず提供状況とモデル名/バージョン/format を確認すること:
-//   az cognitiveservices account list-models -n <account> -g <rg> \
-//     --query "[].{model:name, version:version, format:format, skus:skus[].name}" -o table
-//   （公式: models-sold-directly-by-azure-region-availability）
+// 【既定 = フェーズ1】japaneast 実提供を確認済みの OpenAI 2 モデル（docs/deploy-staged.md）。
+// 非OpenAI（DeepSeek 等）は AIServices アカウント作成後に list-models で確認してから
+// フェーズ2 で追加する（下の phase2 例を参照）。
 //
-// capacity は TPM 千単位。コストの実効上限を兼ねる（指示書 §5 補助ガード）。
-// 高単価モデル（DataZone の GPT-5/DeepSeek 等）は TPM を小さくして worst-case を封じ込める。
-param modelDeployments = [
+// 【.env で上書き可】.env の MODEL_DEPLOYMENTS に JSON 文字列を設定すると、この既定を上書きする。
+//   例（1行で記述）:
+//   MODEL_DEPLOYMENTS=[{"name":"gpt41mini-jp","modelName":"gpt-4.1-mini","modelVersion":"2025-04-14","format":"OpenAI","sku":"Standard","capacity":50}]
+var defaultModelDeployments = [
   {
     name: 'gpt41mini-jp' // 既定・国内完結。軽量コーディング/ログ解析
     modelName: 'gpt-4.1-mini'
@@ -60,12 +60,20 @@ param modelDeployments = [
     sku: 'DataZoneStandard'
     capacity: 20 // 高単価のため絞る
   }
-  {
-    name: 'deepseek-apac' // 代替の高性能コーディング（非 OpenAI）。APAC 処理（越境）
-    modelName: 'DeepSeek-V4-Pro'
-    modelVersion: '' // 空 = 既定バージョン（list-models で確認して固定を推奨）
-    format: 'DeepSeek'
-    sku: 'DataZoneStandard'
-    capacity: 20
-  }
 ]
+
+// フェーズ2で追加する非OpenAIモデルの例（list-models で name/version/format を確認後、
+// 上の defaultModelDeployments に足すか、.env の MODEL_DEPLOYMENTS に含める）:
+//   {
+//     name: 'deepseek-apac'          // 非 OpenAI。APAC 処理（越境）
+//     modelName: 'DeepSeek-V4-Pro'   // ← list-models の実名に合わせる
+//     modelVersion: ''               // ← 実バージョンに固定推奨
+//     format: 'DeepSeek'
+//     sku: 'DataZoneStandard'
+//     capacity: 20
+//   }
+
+// .env の MODEL_DEPLOYMENTS があればそれ（JSON）を、無ければ上の既定を使う
+param modelDeployments = empty(readEnvironmentVariable('MODEL_DEPLOYMENTS', ''))
+  ? defaultModelDeployments
+  : json(readEnvironmentVariable('MODEL_DEPLOYMENTS', '[]'))

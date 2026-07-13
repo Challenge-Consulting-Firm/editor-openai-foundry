@@ -17,11 +17,13 @@ deployment として混在配備**する。利用者は違い（後述の reside
 
 配備する deployment（既定。[infra/main.bicepparam](../infra/main.bicepparam) で増減・変更可）:
 
-| deployment 名 | モデル | SKU / 処理範囲 | 主用途 |
-|---|---|---|---|
-| `gpt41mini-jp` | gpt-4.1-mini (OpenAI) | Standard / 🇯🇵 **国内完結** | 既定。軽量コーディング / ログ解析 |
-| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | DataZone / 🌏 APAC（越境） | 高性能コーディング |
-| `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | DataZone / 🌏 APAC（越境） | 代替の高性能コーディング |
+| deployment 名 | モデル | SKU / 処理範囲 | 主用途 | フェーズ |
+|---|---|---|---|---|
+| `gpt41mini-jp` | gpt-4.1-mini (OpenAI) | Standard / 🇯🇵 **国内完結** | 既定。軽量コーディング / ログ解析 | 1 |
+| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | DataZone / 🌏 APAC（越境） | 高性能コーディング | 1 |
+| `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | DataZone / 🌏 APAC（越境） | 代替の高性能コーディング | 2（確認後追加） |
+
+> 段階デプロイ: 非OpenAIモデルは AIServices 作成後に `list-models` で確認してから足す（[deploy-staged.md](deploy-staged.md)）。
 
 - **用途（コーディング / ログ解析）** はエディタ側プロファイル + システムプロンプト（[prompts/](../prompts/)）で切替
 - **モデル / residency** は deployment 名で切替。名前に `-jp`（国内完結）/ `-apac`（越境）を含め、利用者が処理範囲を認識できるようにする

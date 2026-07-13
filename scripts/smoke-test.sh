@@ -11,8 +11,9 @@ KV_NAME="${1:?usage: smoke-test.sh <keyVaultName> <endpoint>}"
 ENDPOINT="${2:?usage: smoke-test.sh <keyVaultName> <endpoint>}"
 # 全モデル（OpenAI / 非 OpenAI）が同一 openai/v1 エンドポイントで応答する
 BASE_URL="${ENDPOINT%/}/openai/v1"
-# main.bicepparam の deployment 名に合わせる（-jp=国内完結 / -apac=APAC 越境）
-DEPLOYMENTS=("gpt41mini-jp" "gpt5codex-apac" "deepseek-apac")
+# デプロイ済みの deployment 名に合わせる（-jp=国内完結 / -apac=APAC 越境）。
+# 既定はフェーズ1の 2 モデル。フェーズ2で deepseek-apac 等を足したら追記する
+DEPLOYMENTS=("gpt41mini-jp" "gpt5codex-apac")
 
 echo "== 接続元グローバル IP（allowlist に載っているか確認） =="
 curl -s ifconfig.me

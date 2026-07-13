@@ -7,14 +7,17 @@
 **国内リージョン（japaneast）に立てた自社管理リソース（`kind: AIServices`）**に閉じ、OpenAI / 非 OpenAI（DeepSeek 等）の
 **複数モデルを混在配備**する。データ処理範囲は deployment ごとの SKU で決まる（保管は全モデル日本国内固定）:
 
-| deployment（既定） | モデル | 処理範囲 | 用途 |
+| deployment | モデル | 処理範囲 | フェーズ |
 |---|---|---|---|
-| `gpt41mini-jp` | gpt-4.1-mini (OpenAI) | 🇯🇵 国内完結 | 既定・軽量コーディング/ログ解析 |
-| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | 🌏 APAC（越境） | 高性能コーディング |
-| `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | 🌏 APAC（越境） | 代替の高性能コーディング |
+| `gpt41mini-jp` | gpt-4.1-mini (OpenAI) | 🇯🇵 国内完結 | 1（既定・確認済み） |
+| `gpt5codex-apac` | gpt-5.3-codex (OpenAI) | 🌏 APAC（越境） | 1（既定・確認済み） |
+| `deepseek-apac` | DeepSeek-V4-Pro (非OpenAI) | 🌏 APAC（越境） | 2（AIServices 作成後に確認して追加） |
 
 利用者は違い（越境・コスト）を認識のうえ選択する前提。deployment 名の `-jp`/`-apac` で処理範囲が分かる。
 全モデルは共通の `openai/v1` エンドポイント + 共通キーで使え、エディタ設定は 1 プロバイダで済む。
+
+非OpenAIモデルは AIServices アカウント作成後でないと `list-models` で確認できないため、
+**まず OpenAI 2モデルで構築 → DeepSeek 等を確認して追加**する段階デプロイを推奨（[docs/deploy-staged.md](docs/deploy-staged.md)）。
 
 - 原本指示書: [foundry-editor-access-instruction.md](foundry-editor-access-instruction.md)
 - 設計書: [docs/design.md](docs/design.md)
@@ -123,7 +126,7 @@ OpenAI 以外にも Azure から直接提供されるモデル（DeepSeek・xAI 
 | パス | 内容 |
 |---|---|
 | `.env.sample` | デプロイ環境変数のサンプル。`cp .env.sample .env` して実値を設定（`.env` は非コミット） |
-| `infra/` | bicep 一式。`.env` から値を読む。直接編集はモデル catalog（`main.bicepparam` の `modelDeployments`）のみ |
+| `infra/` | bicep 一式。`.env` から値を読む。モデル catalog は `main.bicepparam` の `defaultModelDeployments`（`.env` の `MODEL_DEPLOYMENTS` で上書き可） |
 | `functions/` | 運用 Functions（週次キーローテーション / ハードリミット停止 / ソフト通知） |
 | `kql/` | 月次利用量レポートのクエリ |
 | `prompts/` | 用途別システムプロンプト（エディタのプロファイルに設定） |
@@ -132,6 +135,10 @@ OpenAI 以外にも Azure から直接提供されるモデル（DeepSeek・xAI 
 
 ## デプロイ手順
 
+非OpenAIモデル（DeepSeek 等）は AIServices 作成後でないと提供確認できないため、
+**段階デプロイを推奨**（フェーズ1: OpenAI 2モデル → フェーズ2: DeepSeek 等を確認して追加）。
+詳細は **[docs/deploy-staged.md](docs/deploy-staged.md)**。以下はフェーズ1の流れ:
+
 ```bash
 # 0. 前提: az login 済み、Power Automate の webhook フロー作成済み
 
@@ -139,7 +146,8 @@ OpenAI 以外にも Azure から直接提供されるモデル（DeepSeek・xAI 
 cp .env.sample .env
 $EDITOR .env
 
-# 2. （任意）配備モデルを変えるなら infra/main.bicepparam の modelDeployments を編集
+# 2. （任意）モデルを変えるなら main.bicepparam の defaultModelDeployments を編集、
+#     または .env の MODEL_DEPLOYMENTS に JSON で指定（.env.sample の例参照）
 
 # 3. デプロイ（.env を読み込み → what-if 確認 → yes で適用）
 ./scripts/deploy.sh --first-run     # 初回のみ --first-run（key1 を Key Vault へ初期投入）
