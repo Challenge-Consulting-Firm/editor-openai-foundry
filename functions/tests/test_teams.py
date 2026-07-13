@@ -58,10 +58,11 @@ def test_empty_webhook_url_rejected():
         TeamsNotifier("")
 
 
-def test_message_never_contains_key_material():
-    # 通知文言にキー平文を含めない設計（指示書 §9）の回帰ガード:
-    # rotate 側は固定文言のみを渡す
-    from shared.rotation import ROTATION_MESSAGE
+def test_rotation_message_includes_new_key():
+    # 方針変更: 週次自動ローテのため、配布容易性を優先して新キーを通知本文に含める。
+    from shared.rotation import rotation_message
 
-    assert "key1" not in ROTATION_MESSAGE
-    assert "key2" not in ROTATION_MESSAGE
+    msg = rotation_message("SECRET-KEY-VALUE")
+    assert "SECRET-KEY-VALUE" in msg
+    # スロット名（key1/key2）は本文に露出しない
+    assert "slot" not in msg.lower()

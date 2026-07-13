@@ -36,7 +36,10 @@ class TestRotate:
         assert result.new_slot == "key2"
         ops.regenerate_key.assert_called_once_with("key2")
         ops.store_key.assert_called_once_with("new-secret-key", slot="key2")
-        notifier.post.assert_called_once_with(rotation.ROTATION_MESSAGE)
+        # 通知本文には新キーが含まれる（Teams 配布方針）
+        notifier.post.assert_called_once()
+        posted = notifier.post.call_args[0][0]
+        assert "new-secret-key" in posted
 
     def test_alternates_back_to_key1(self):
         ops = make_ops("key2")

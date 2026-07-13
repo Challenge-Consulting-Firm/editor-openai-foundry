@@ -4,11 +4,13 @@
 
 ## 1. キーの取得
 
+**Teams のローテ通知に記載された「新しいキー」をコピーする**（毎週月曜 09:00 に自動投稿）。
+Azure アクセスがあれば Key Vault から直接取得も可:
 ```bash
 az keyvault secret show --vault-name <KV名> --name editor-openai-key --query value -o tsv | pbcopy
 ```
 
-**キーは毎週月曜 09:00 にローテーションされる。** Teams 通知を受けたら 1 週間以内に再設定。
+**キーは毎週月曜 09:00 にローテーションされる。** Teams 通知の新キーで 1 週間以内に再設定。
 
 ## 2-A. GitHub Copilot（BYOK: Bring Your Own Key）
 

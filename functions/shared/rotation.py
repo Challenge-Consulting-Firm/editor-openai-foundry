@@ -6,11 +6,20 @@ Azure SDK / HTTP に依存しない純粋ロジックとして分離し、azure_
 
 from dataclasses import dataclass
 
-ROTATION_MESSAGE = (
-    "エディタ用 OpenAI API キーをローテーションしました。"
-    "Key Vault から新キーを取得してください。"
+# 新キー本文を Teams に含める（週次自動ローテーションのため秘匿性は低いと判断。
+# Azure にアクセスできない利用者にも配布できるようにするための方針）。
+# {key} に新しい api-key が差し込まれる。
+ROTATION_MESSAGE_TEMPLATE = (
+    "エディタ用 OpenAI API キーをローテーションしました。\n"
+    "新しいキー:\n{key}\n"
+    "エディタのキー設定をこの値に貼り替えてください。"
     "旧キーは次回ローテーション（1週間後）で失効します。"
 )
+
+
+def rotation_message(new_key: str) -> str:
+    """ローテ完了通知の本文（新キーを含む）。"""
+    return ROTATION_MESSAGE_TEMPLATE.format(key=new_key)
 
 
 @dataclass
@@ -44,6 +53,5 @@ def rotate(ops, notifier) -> RotationResult:
     new = next_slot(active)
     new_key = ops.regenerate_key(new)
     ops.store_key(new_key, slot=new)
-    del new_key
-    notifier.post(ROTATION_MESSAGE)
+    notifier.post(rotation_message(new_key))
     return RotationResult(previous_slot=active, new_slot=new)

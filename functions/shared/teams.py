@@ -4,7 +4,8 @@
 受け取り、チャネルへ投稿する構成（旧 O365 Incoming Webhook connector は廃止済み）。
 フロー側の期待形式が異なる場合は _payload() のみ変更する。
 
-キー平文は絶対にメッセージへ含めない（指示書 §9）。
+注意: ローテ通知（rotation_message）は方針変更により新キー本文を含む。
+Teams チャネルは利用者限定であることが前提（docs/design.md §3）。
 """
 
 import logging

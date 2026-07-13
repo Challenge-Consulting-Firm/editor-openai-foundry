@@ -142,7 +142,12 @@ deployment として混在配備**する。利用者は違い（後述の reside
 1. Key Vault `editor-openai-key` の `slot` タグから現用スロットを読む（`key1` / `key2`）
 2. **反対側**のキーを `az cognitiveservices account keys regenerate` 相当の SDK 呼び出しで再生成
 3. 新キーを `editor-openai-key` の新バージョンとして保存（`slot` タグを更新）
-4. Teams webhook へ完了通知（キー平文は流さない）
+4. Teams webhook へ完了通知（**新しいキー本文を含める**）
+
+> **方針: ローテ通知に新キーを載せる**（当初の「Teams に平文を流さない」判断を変更）。
+> 理由: Azure にアクセスできない利用者にも配布する必要があり、かつ週次で自動失効するため秘匿性は低い。
+> 前提: **Teams チャネルはこの基盤の利用者だけに限定**すること（キーが履歴に残るため）。IP allowlist・
+> 週次ローテ・予算/TPM 上限で被害範囲は限定される。厳格な秘匿が必要ならパスワードマネージャ配布に切替。
 
 - 旧キーは regenerate しない → **次回ローテーションまで 1 週間有効**（無停止ローテーション）
 - 実行 identity: Function App の Managed Identity

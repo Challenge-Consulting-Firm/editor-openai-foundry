@@ -6,14 +6,13 @@ key1/key2 を交互に regenerate し、新キーを Key Vault `editor-openai-ke
 
 ## 利用者向け: キーの更新手順
 
-Teams のローテーション通知を受けたら **1 週間以内**に更新する:
+Teams のローテーション通知を受けたら **1 週間以内**に更新する。**通知本文に新しいキーが記載**されているので、
+それをコピーしてエディタのキー設定を貼り替える（[setup-zed.md](setup-zed.md) / [setup-vscode.md](setup-vscode.md)）。
 
+Azure にアクセスできる場合は Key Vault から直接取得してもよい:
 ```bash
-# キーをクリップボードへ（画面・シェル履歴に出さない）
 az keyvault secret show --vault-name <KV名> --name editor-openai-key --query value -o tsv | pbcopy
 ```
-
-エディタのキー設定を貼り替える（[setup-zed.md](setup-zed.md) / [setup-vscode.md](setup-vscode.md)）。
 
 突然 401 になった場合 → 更新を忘れて旧キーが失効した可能性が高い。上記手順で最新キーを取得する。
 
@@ -44,10 +43,11 @@ NEW_KEY=$(az cognitiveservices account keys regenerate \
   -n $RES -g $RG --key-name $NEXT --query $NEXT -o tsv)
 az keyvault secret set --vault-name $KV --name editor-openai-key \
   --value "$NEW_KEY" --tags slot=$NEXT -o none
-unset NEW_KEY
 
+# 方針: ローテ通知に新キー本文を含める（利用者はこれをエディタに貼り替える）
 curl -sf -X POST "$TEAMS_WEBHOOK_URL" -H 'Content-Type: application/json' \
-  -d '{"text":"エディタ用 OpenAI API キーをローテーションしました。Key Vault から新キーを取得してください。旧キーは次回ローテーション（1週間後）で失効します。"}'
+  -d "$(printf '{"text":"エディタ用 OpenAI API キーをローテーションしました。\\n新しいキー:\\n%s\\nエディタのキー設定をこの値に貼り替えてください。旧キーは次回ローテーション（1週間後）で失効します。"}' "$NEW_KEY")"
+unset NEW_KEY
 ```
 
 ### 手動実行（Portal から）
