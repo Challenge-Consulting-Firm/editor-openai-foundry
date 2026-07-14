@@ -267,3 +267,7 @@ cd functions
 python3 -m venv .venv && .venv/bin/pip install pytest requests
 .venv/bin/python -m pytest tests
 ```
+
+## ライセンス
+
+[MIT License](LICENSE)
